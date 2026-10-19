@@ -1,0 +1,6 @@
+.n8n-local/
+.n8n/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

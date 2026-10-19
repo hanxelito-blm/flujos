@@ -1,0 +1,350 @@
+{
+  "name": "FacturaBot · POO en n8n",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "fb000000-0000-4000-8000-000000000001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "/* ============================================================================\n * FacturaBot · Nodo 2 · \"Datos de prueba\"\n * ----------------------------------------------------------------------------\n * Genera el lote de 7 facturas en la estructura nativa de n8n: [{ json: {...} }].\n * ========================================================================== */\n\n/* ============================================================================\n * FacturaBot · Datos de prueba (nodo 2 · \"Datos de prueba\")\n * ----------------------------------------------------------------------------\n * Lote de 7 facturas diseñado para ejercitar las TRES rutas del nodo Switch:\n *\n *   F-001  nacional   -> APROBADA    (camino feliz, IVA 13 %)\n *   F-002  exenta     -> APROBADA    (exención por servicios de salud)\n *   F-003  extranjera  -> APROBADA    (conversión de USD a colones)\n *   F-004  nacional   -> RECHAZADA   (cédula jurídica con formato inválido)\n *   F-005  nacional   -> APROBADA    (monto alto, IVA 13 %)\n *   F-006  credito    -> RECHAZADA   (tipo documental no soportado)\n *   F-007  nacional   -> REVISIÓN    (fecha en el futuro)\n * ========================================================================== */\n\nconst lote = [\n  { numero: 'F-001', tipo: 'nacional', proveedor: 'Distribuidora Central', cedulaJuridica: '3-101-123456', fecha: '2026-09-10', lineas: [{ descripcion: 'Resmas de papel', cantidad: 10, precioUnitario: 5000 }] },\n  { numero: 'F-002', tipo: 'exenta', proveedor: 'Clínica San José', cedulaJuridica: '3-102-654321', fecha: '2026-09-12', motivoExencion: 'Servicios de salud', lineas: [{ descripcion: 'Exámenes médicos', cantidad: 2, precioUnitario: 75000 }] },\n  { numero: 'F-003', tipo: 'extranjera', proveedor: 'Cloud Services Inc.', cedulaJuridica: '3-012-000111', fecha: '2026-09-15', moneda: 'USD', tipoCambio: 510, lineas: [{ descripcion: 'Licencia anual', cantidad: 1, precioUnitario: 2500 }] },\n  { numero: 'F-004', tipo: 'nacional', proveedor: 'Ferretería El Clavo', cedulaJuridica: '123', fecha: '2026-09-20', lineas: [{ descripcion: 'Tornillos', cantidad: 100, precioUnitario: 50 }] },\n  { numero: 'F-005', tipo: 'nacional', proveedor: 'TecnoMundo', cedulaJuridica: '3-101-777888', fecha: '2026-09-25', lineas: [{ descripcion: 'Laptops', cantidad: 4, precioUnitario: 250000 }] },\n  { numero: 'F-006', tipo: 'credito', proveedor: 'Proveedor X', cedulaJuridica: '3-101-999000', fecha: '2026-09-28', lineas: [{ descripcion: 'Varios', cantidad: 1, precioUnitario: 10000 }] },\n  { numero: 'F-007', tipo: 'nacional', proveedor: 'Imprenta Futura', cedulaJuridica: '3-101-444555', fecha: '2030-01-15', lineas: [{ descripcion: 'Volantes', cantidad: 500, precioUnitario: 20 }] },\n];\n\n\nreturn lote.map(f => ({ json: f }));\n"
+      },
+      "id": "fb000000-0000-4000-8000-000000000002",
+      "name": "Datos de prueba",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "/* ============================================================================\n * FacturaBot · Nodo 3 · \"Procesar facturas\"\n * ----------------------------------------------------------------------------\n * Jerarquía de clases (4 pilares de POO) + patrón Factory + Validador de negocio.\n * ========================================================================== */\n\n/* ============================================================================\n * FacturaBot · Capa de dominio\n * ----------------------------------------------------------------------------\n * Práctica: \"Programación Orientada a Objetos en el nodo Code de n8n\"\n *\n * Este archivo es la FUENTE ÚNICA de verdad del dominio. El script\n * tools/build.mjs lo concatena dentro del nodo Code \"Procesar facturas\" y\n * tools/verificar.mjs lo ejecuta con Node para comprobar los resultados.\n *\n * Pilares de POO implementados aquí:\n *   1. ENCAPSULAMIENTO  -> campos privados (#) + getters de solo lectura\n *   2. HERENCIA         -> extends / super()\n *   3. POLIMORFISMO     -> sobrescritura de calcularImpuesto(), total(), toJSON()\n *   4. ABSTRACCIÓN      -> Factura es abstracta: calcularImpuesto() lanza Error\n *\n * Patrón adicional: FACTORY (FabricaFacturas) para crear la subclase correcta.\n * ========================================================================== */\n\n/* ---------------------------------------------------------------------------\n * Error de negocio: transporta un código estable para poder clasificar el\n * rechazo sin depender de textos libres.\n * ------------------------------------------------------------------------ */\nclass ErrorFactura extends Error {\n  constructor(mensaje, codigo = 'FACTURA_INVALIDA') {\n    super(mensaje);\n    this.name = 'ErrorFactura';\n    this.codigo = codigo;\n  }\n}\n\n/* ===========================================================================\n * 1) LineaFactura — ENCAPSULAMIENTO\n * ===========================================================================\n * No expone estado interno: la única forma de leer sus datos es a través de\n * getters, y la única forma de calcular su valor es el método subtotal().\n * ========================================================================= */\nclass LineaFactura {\n  #descripcion;\n  #cantidad;\n  #precioUnitario;\n\n  constructor({ descripcion, cantidad, precioUnitario }) {\n    if (typeof descripcion !== 'string' || descripcion.trim() === '') {\n      throw new ErrorFactura(\n        'La descripción de la línea es obligatoria.',\n        'LINEA_SIN_DESCRIPCION',\n      );\n    }\n    if (!Number.isFinite(Number(cantidad)) || Number(cantidad) <= 0) {\n      throw new ErrorFactura(\n        `La cantidad de \"${descripcion.trim()}\" debe ser mayor que 0.`,\n        'CANTIDAD_INVALIDA',\n      );\n    }\n    if (!Number.isFinite(Number(precioUnitario)) || Number(precioUnitario) <= 0) {\n      throw new ErrorFactura(\n        `El precio unitario de \"${descripcion.trim()}\" debe ser mayor que 0.`,\n        'PRECIO_INVALIDO',\n      );\n    }\n\n    this.#descripcion = descripcion.trim();\n    this.#cantidad = Number(cantidad);\n    this.#precioUnitario = Number(precioUnitario);\n  }\n\n  get descripcion() {\n    return this.#descripcion;\n  }\n\n  get cantidad() {\n    return this.#cantidad;\n  }\n\n  get precioUnitario() {\n    return this.#precioUnitario;\n  }\n\n  /** Valor de la línea: cantidad × precio unitario. */\n  subtotal() {\n    return this.#cantidad * this.#precioUnitario;\n  }\n\n  toJSON() {\n    return {\n      descripcion: this.#descripcion,\n      cantidad: this.#cantidad,\n      precioUnitario: this.#precioUnitario,\n      subtotal: this.subtotal(),\n    };\n  }\n\n  /**\n   * Subtotal \"tolerante\" usado para facturas RECHAZADAS: ignora las líneas con\n   * datos inválidos en lugar de lanzar. Permite mostrar cuánto dinero quedó\n   * en disputa sin que el lote reviente.\n   */\n  static subtotalDe(lineas = []) {\n    if (!Array.isArray(lineas)) return 0;\n    return lineas.reduce((acumulado, linea) => {\n      const cantidad = Number(linea?.cantidad);\n      const precio = Number(linea?.precioUnitario);\n      if (!Number.isFinite(cantidad) || !Number.isFinite(precio)) return acumulado;\n      if (cantidad <= 0 || precio <= 0) return acumulado;\n      return acumulado + cantidad * precio;\n    }, 0);\n  }\n}\n\n/* ===========================================================================\n * 2) Factura — CLASE BASE ABSTRACTA (abstracción + encapsulamiento)\n * ===========================================================================\n * - El detalle de líneas es privado (#lineas) y se expone con el getter\n *   `lineas`, que devuelve una copia congelada (inmutable para el exterior).\n * - calcularImpuesto() es un método abstracto: lanza Error si alguien intenta\n *   usar la base directamente.\n * - El constructor bloquea la instanciación directa de la clase abstracta.\n * ========================================================================= */\nclass Factura {\n  #numero;\n  #proveedor;\n  #cedulaJuridica;\n  #fecha;\n  #lineas;\n\n  constructor({ numero, proveedor, cedulaJuridica, fecha, lineas = [] }) {\n    // Abstracción real: la base no se puede instanciar, hay que usar una subclase.\n    if (new.target === Factura) {\n      throw new TypeError(\n        'Factura es una clase abstracta: use FabricaFacturas.crear() o una subclase.',\n      );\n    }\n\n    this.#numero = numero ?? null;\n    this.#proveedor = proveedor ?? null;\n    this.#cedulaJuridica = cedulaJuridica ?? null;\n    this.#fecha = fecha instanceof Date ? fecha : new Date(fecha);\n\n    // Composición: el detalle crudo se convierte en objetos LineaFactura\n    // (con datos inválidos, el constructor de LineaFactura lanza ErrorFactura).\n    this.#lineas = Object.freeze(\n      (Array.isArray(lineas) ? lineas : []).map((linea) =>\n        linea instanceof LineaFactura ? linea : new LineaFactura(linea),\n      ),\n    );\n  }\n\n  get lineas() {\n    return this.#lineas;\n  }\n\n  get numero() {\n    return this.#numero;\n  }\n\n  get proveedor() {\n    return this.#proveedor;\n  }\n\n  get cedulaJuridica() {\n    return this.#cedulaJuridica;\n  }\n\n  get fecha() {\n    return Number.isNaN(this.#fecha.getTime())\n      ? null\n      : this.#fecha.toISOString().slice(0, 10);\n  }\n\n  /** Tipo documental. Se sobrescribe en cada subclase (polimorfismo). */\n  get tipo() {\n    return 'base';\n  }\n\n  /** Tasa de impuesto vigente. Se sobrescribe en cada subclase. */\n  get tasaImpuesto() {\n    return 0;\n  }\n\n  /** Suma de las líneas, en la moneda original de la factura. */\n  subtotal() {\n    return this.#lineas.reduce((acumulado, linea) => acumulado + linea.subtotal(), 0);\n  }\n\n  /**\n   * El subtotal expresado en colones (moneda nacional de Costa Rica).\n   * En la base la moneda original ya es CRC; FacturaExtranjera lo sobrescribe\n   * para aplicar el tipo de cambio.\n   */\n  subtotalColones() {\n    return this.subtotal();\n  }\n\n  /** MÉTODO ABSTRACTO: cada subclase define su propia regla de IVA. */\n  calcularImpuesto() {\n    throw new Error(\n      'calcularImpuesto() es un método abstracto: debe implementarse en la subclase.',\n    );\n  }\n\n  /** Total en colones. Se sobrescribe en FacturaExtranjera (conversión). */\n  total() {\n    return this.subtotalColones() + this.calcularImpuesto();\n  }\n\n  toJSON() {\n    return {\n      numero: this.#numero,\n      tipo: this.tipo,\n      proveedor: this.#proveedor,\n      cedulaJuridica: this.#cedulaJuridica,\n      fecha: this.fecha,\n      lineas: this.#lineas.map((linea) => linea.toJSON()),\n      subtotal: this.subtotalColones(),\n      impuesto: this.calcularImpuesto(),\n      total: this.total(),\n      moneda: 'CRC',\n    };\n  }\n}\n\n/* ===========================================================================\n * 3) FacturaNacional — HERENCIA + POLIMORFISMO (IVA 13 %)\n * ========================================================================= */\nclass FacturaNacional extends Factura {\n  static TASA_IVA = 0.13;\n\n  constructor(datos) {\n    super(datos);\n  }\n\n  get tipo() {\n    return 'nacional';\n  }\n\n  get tasaImpuesto() {\n    return FacturaNacional.TASA_IVA;\n  }\n\n  /** POLIMORFISMO: aquí vive la regla del 13 %. */\n  calcularImpuesto() {\n    return Math.round(this.subtotal() * this.tasaImpuesto);\n  }\n}\n\n/* ===========================================================================\n * 4) FacturaExenta — HERENCIA + POLIMORFISMO (IVA 0 % + motivo de exención)\n * ========================================================================= */\nclass FacturaExenta extends Factura {\n  #motivoExencion;\n\n  constructor(datos) {\n    super(datos);\n    this.#motivoExencion = String(datos?.motivoExencion ?? '').trim();\n  }\n\n  get motivoExencion() {\n    return this.#motivoExencion;\n  }\n\n  get tipo() {\n    return 'exenta';\n  }\n\n  get tasaImpuesto() {\n    return 0;\n  }\n\n  /** POLIMORFISMO: exenta, sin IVA. */\n  calcularImpuesto() {\n    return 0;\n  }\n}\n\n/* ===========================================================================\n * 5) FacturaExtranjera — HERENCIA + POLIMORFISMO (IVA 0 % y total en ₡)\n * ===========================================================================\n * El IVA es 0 (exportación de servicios) y el total se convierte a colones\n * usando el tipo de cambio de la factura.\n * ========================================================================= */\nclass FacturaExtranjera extends Factura {\n  #moneda;\n  #tipoCambio;\n\n  constructor(datos) {\n    super(datos);\n    this.#moneda = String(datos?.moneda ?? '').toUpperCase();\n    this.#tipoCambio = Number(datos?.tipoCambio);\n  }\n\n  get moneda() {\n    return this.#moneda;\n  }\n\n  get tipoCambio() {\n    return this.#tipoCambio;\n  }\n\n  get tipo() {\n    return 'extranjera';\n  }\n\n  get tasaImpuesto() {\n    return 0;\n  }\n\n  /** POLIMORFISMO: exenta de IVA por exportación de servicios. */\n  calcularImpuesto() {\n    return 0;\n  }\n\n  /** POLIMORFISMO: convierte el subtotal a colones con el tipo de cambio. */\n  subtotalColones() {\n    return Math.round(this.subtotal() * this.#tipoCambio);\n  }\n\n  /** POLIMORFISMO: sobrescribe total() para entregar el importe en colones. */\n  total() {\n    return this.subtotalColones() + this.calcularImpuesto();\n  }\n\n  toJSON() {\n    return {\n      ...super.toJSON(),\n      monedaOriginal: this.#moneda,\n      tipoCambio: this.#tipoCambio,\n      subtotalOriginal: this.subtotal(),\n    };\n  }\n}\n\n/* ===========================================================================\n * 6) FabricaFacturas — PATRÓN FACTORY\n * ===========================================================================\n * Decide la subclase a instanciar a partir de `datos.tipo`.\n * Se usa un REGISTRO (mapa tipo → clase) en lugar de una cadena de if/else:\n *  - no hay `if` por tipo de factura (la prohibition de la guía),\n *  - es extensible: registrar un tipo nuevo es una línea, no un refactor.\n * ========================================================================= */\nclass FabricaFacturas {\n  static #registro = {\n    nacional: FacturaNacional,\n    exenta: FacturaExenta,\n    extranjera: FacturaExtranjera,\n  };\n\n  /** Tipos soportados por el workflow. */\n  static tipos() {\n    return Object.keys(FabricaFacturas.#registro);\n  }\n\n  /** ¿El workflow sabe procesar este tipo documental? */\n  static soporta(tipo) {\n    const clave = String(tipo ?? '').trim().toLowerCase();\n    return Object.prototype.hasOwnProperty.call(FabricaFacturas.#registro, clave);\n  }\n\n  /** Registra un nuevo tipo (principio abierto/cerrado). */\n  static registrar(tipo, clase) {\n    FabricaFacturas.#registro[String(tipo).trim().toLowerCase()] = clase;\n    return FabricaFacturas;\n  }\n\n  /**\n   * Punto de entrada único: devuelve la instancia de la subclase correcta.\n   * @throws {ErrorFactura} si el tipo no está soportado.\n   */\n  static crear(datos) {\n    const clave = String(datos?.tipo ?? '').trim().toLowerCase();\n    const Clase = FabricaFacturas.#registro[clave];\n\n    if (!Clase) {\n      throw new ErrorFactura(\n        `El tipo \"${datos?.tipo}\" no está soportado. Tipos válidos: ${FabricaFacturas.tipos().join(', ')}.`,\n        'TIPO_NO_SOPORTADO',\n      );\n    }\n\n    return new Clase(datos);\n  }\n}\n\n/* ===========================================================================\n * 7) ValidadorFactura — REGLAS DE NEGOCIO CON SEVERIDAD\n * ===========================================================================\n * Cada regla se clasifica como:\n *   ERROR      -> la factura se RECHAZA (se devuelve al proveedor).\n *   ADVERTENCIA -> la factura pasa a REVISIÓN (la ve gerencia).\n * Sin observaciones -> la factura queda APROBADA.\n * ========================================================================= */\nclass ValidadorFactura {\n  /** Cédula jurídica costarricense: 3-XXX-XXXXXX (9 dígitos con guiones). */\n  static CEDULA_COSTARRICENSE = /^3-\\d{3}-\\d{6}$/;\n\n  static validar(datos = {}) {\n    const errores = [];\n    const advertencias = [];\n\n    // 1) Número de factura: obligatorio.\n    if (!datos.numero || String(datos.numero).trim() === '') {\n      errores.push('El número de factura es obligatorio.');\n    }\n\n    // 2) Cédula jurídica costarricense: obligatoria y con formato válido.\n    const cedula = String(datos.cedulaJuridica ?? '').trim();\n    if (cedula === '') {\n      errores.push('La cédula jurídica del proveedor es obligatoria.');\n    } else if (!ValidadorFactura.CEDULA_COSTARRICENSE.test(cedula)) {\n      errores.push(\n        `La cédula jurídica \"${cedula}\" no cumple el formato 3-XXX-XXXXXX.`,\n      );\n    }\n\n    // 3) Tipo documental: debe existir en el registro de la fábrica.\n    if (!FabricaFacturas.soporta(datos.tipo)) {\n      errores.push(\n        `El tipo \"${datos.tipo}\" no está soportado. Tipos válidos: ${FabricaFacturas.tipos().join(', ')}.`,\n      );\n    }\n\n    // 4) Fecha: obligatoria, válida y no futura.\n    const fecha = new Date(datos.fecha);\n    if (!datos.fecha || Number.isNaN(fecha.getTime())) {\n      errores.push('La fecha de la factura es obligatoria y debe ser válida.');\n    } else if (fecha.getTime() > Date.now()) {\n      advertencias.push(\n        `La fecha ${String(datos.fecha).slice(0, 10)} es futura: requiere validación de gerencia.`,\n      );\n    }\n\n    // 5) Detalle: al menos una línea y cada línea con cantidad/precio > 0.\n    const lineas = Array.isArray(datos.lineas) ? datos.lineas : [];\n    if (lineas.length === 0) {\n      errores.push('La factura debe tener al menos una línea de detalle.');\n    }\n    lineas.forEach((linea, indice) => {\n      const numeroLinea = indice + 1;\n      const descripcion = String(linea?.descripcion ?? '').trim();\n      const cantidad = Number(linea?.cantidad);\n      const precio = Number(linea?.precioUnitario);\n\n      if (descripcion === '') {\n        errores.push(`Línea ${numeroLinea}: la descripción es obligatoria.`);\n      }\n      if (!Number.isFinite(cantidad) || cantidad <= 0) {\n        errores.push(`Línea ${numeroLinea}: la cantidad debe ser mayor que 0.`);\n      }\n      if (!Number.isFinite(precio) || precio <= 0) {\n        errores.push(`Línea ${numeroLinea}: el precio unitario debe ser mayor que 0.`);\n      }\n    });\n\n    return {\n      valida: errores.length === 0,\n      errores,\n      advertencias,\n    };\n  }\n}\n\n\n/* ============================================================================\n * FacturaBot · Constantes compartidas por el workflow\n * ----------------------------------------------------------------------------\n * ESTADOS  -> valores exactos que evalúa el nodo Switch ({{ $json.estado }}).\n * ACCIONES -> texto que agrega cada nodo Set (\"Aprobada\" / \"Revisión\" /\n *             \"Rechazada\"). Deben coincidir con los nodos del workflow.\n * ========================================================================== */\n\nconst ESTADOS = {\n  APROBADA: 'aprobada',\n  REVISION: 'revision',\n  RECHAZADA: 'rechazada',\n};\n\nconst ACCIONES = {\n  [ESTADOS.APROBADA]: 'Registrar en contabilidad',\n  [ESTADOS.REVISION]: 'Enviar a gerencia',\n  [ESTADOS.RECHAZADA]: 'Devolver al proveedor',\n};\n\nconst MONEDA_LOCAL = 'CRC';\n\n\n/* ============================================================================\n * FacturaBot · Capa de procesamiento (nodo 3 · \"Procesar facturas\")\n * ----------------------------------------------------------------------------\n * Traduce cada item de n8n a una factura (vía Factory), lo valida y devuelve\n * un registro normalizado con `estado`, que es el campo que consume el\n * nodo Switch (\"Clasificar\").\n * ========================================================================== */\n\n\n/**\n * Procesa una factura cruda y devuelve el registro normalizado.\n * @param {object} datos factura tal como viene del nodo de datos de prueba\n */\nfunction procesarFactura(datos = {}) {\n  const validacion = ValidadorFactura.validar(datos);\n  const errores = [...validacion.errores];\n  const advertencias = [...validacion.advertencias];\n\n  // La Factory decide la subclase; si el tipo no existe, lanza ErrorFactura.\n  let instancia = null;\n  try {\n    instancia = FabricaFacturas.crear(datos);\n  } catch (error) {\n    // El tipo no soportado ya fue reportado por el validador: no se duplica.\n    const yaReportado =\n      error instanceof ErrorFactura && error.codigo === 'TIPO_NO_SOPORTADO';\n    if (!yaReportado && validacion.errores.length === 0) {\n      errores.push(error.message);\n    }\n  }\n\n  const identidad = {\n    numero: datos.numero ?? null,\n    tipo: String(datos.tipo ?? '').trim().toLowerCase(),\n    proveedor: datos.proveedor ?? null,\n    cedulaJuridica: datos.cedulaJuridica ?? null,\n    fecha: datos.fecha ?? null,\n  };\n\n  const lineas = Array.isArray(datos.lineas)\n    ? datos.lineas.map((linea) => ({\n        descripcion: String(linea?.descripcion ?? ''),\n        cantidad: Number(linea?.cantidad),\n        precioUnitario: Number(linea?.precioUnitario),\n      }))\n    : [];\n\n  /* --- Factura rechazada: se reporta un monto REFERENCIAL (sin IVA) ------ *\n   * y se marca para que el ReporteLote lo excluya de las sumas del lote.   */\n  if (errores.length > 0) {\n    const montoReferencial = LineaFactura.subtotalDe(datos.lineas);\n    return {\n      ...identidad,\n      estado: ESTADOS.RECHAZADA,\n      nivel: 'error',\n      motivo: errores.join(' | '),\n      errores,\n      advertencias,\n      lineas,\n      subtotal: montoReferencial,\n      impuesto: 0,\n      total: montoReferencial,\n      moneda: 'CRC',\n      referencia: true,\n    };\n  }\n\n  /* --- Factura válida: los montos salen de la instancia (polimorfismo) --- */\n  const calculo = instancia.toJSON();\n\n  return {\n    ...identidad,\n    ...calculo,\n    estado: advertencias.length > 0 ? ESTADOS.REVISION : ESTADOS.APROBADA,\n    nivel: advertencias.length > 0 ? 'aviso' : 'ok',\n    motivo: advertencias.join(' | '),\n    errores,\n    advertencias,\n    referencia: false,\n  };\n}\n\n/**\n * Procesa el lote completo (el nodo Code corre \"Run Once for All Items\").\n * @param {Array<{json: object}>} items items de entrada de n8n\n */\nfunction procesarLote(items = []) {\n  return items.map((item) => procesarFactura(item?.json ?? item));\n}\n\n\n/* ==========================================================================\n * Ejecución del nodo (Run Once for All Items)\n * ======================================================================== */\nconst items = $input.all();\nconst registros = procesarLote(items);\n\nreturn registros.map((json) => ({ json }));\n"
+      },
+      "id": "fb000000-0000-4000-8000-000000000003",
+      "name": "Procesar facturas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "fb000000-0000-4000-8000-00000000004a",
+                    "leftValue": "={{ $json.estado }}",
+                    "rightValue": "aprobada",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "aprobada"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "fb000000-0000-4000-8000-00000000004b",
+                    "leftValue": "={{ $json.estado }}",
+                    "rightValue": "revision",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "revision"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "fb000000-0000-4000-8000-00000000004c",
+                    "leftValue": "={{ $json.estado }}",
+                    "rightValue": "rechazada",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "rechazada"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "fb000000-0000-4000-8000-000000000004",
+      "name": "Clasificar",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fb000000-0000-4000-8000-00000000005a",
+              "name": "accion",
+              "value": "Registrar en contabilidad",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "fb000000-0000-4000-8000-000000000005",
+      "name": "Aprobada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fb000000-0000-4000-8000-00000000006a",
+              "name": "accion",
+              "value": "Enviar a gerencia",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "fb000000-0000-4000-8000-000000000006",
+      "name": "Revisión",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fb000000-0000-4000-8000-00000000007a",
+              "name": "accion",
+              "value": "Devolver al proveedor",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "fb000000-0000-4000-8000-000000000007",
+      "name": "Rechazada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "id": "fb000000-0000-4000-8000-000000000008",
+      "name": "Unificar lote",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "/* ============================================================================\n * FacturaBot · Nodo 9 · \"Reporte del lote\"\n * ----------------------------------------------------------------------------\n * Instancia ReporteLote, consolida las métricas y devuelve un único ítem con el\n * ========================================================================== */\n\n/* ============================================================================\n * FacturaBot · Constantes compartidas por el workflow\n * ----------------------------------------------------------------------------\n * ESTADOS  -> valores exactos que evalúa el nodo Switch ({{ $json.estado }}).\n * ACCIONES -> texto que agrega cada nodo Set (\"Aprobada\" / \"Revisión\" /\n *             \"Rechazada\"). Deben coincidir con los nodos del workflow.\n * ========================================================================== */\n\nconst ESTADOS = {\n  APROBADA: 'aprobada',\n  REVISION: 'revision',\n  RECHAZADA: 'rechazada',\n};\n\nconst ACCIONES = {\n  [ESTADOS.APROBADA]: 'Registrar en contabilidad',\n  [ESTADOS.REVISION]: 'Enviar a gerencia',\n  [ESTADOS.RECHAZADA]: 'Devolver al proveedor',\n};\n\nconst MONEDA_LOCAL = 'CRC';\n\n\n/* ============================================================================\n * FacturaBot · Capa de presentación (paleta + render HTML)\n * ----------------------------------------------------------------------------\n * Genera el reporte visual del lote. El mismo renderizador se usa:\n *   - dentro del nodo Code \"Reporte del lote\" (nodo 9) para producir el HTML\n *     y el binario descargable, y\n *   - en tools/build.mjs para generar assets/reporte-lote.html.\n *\n * PALETA \"Midnight Ledger\": azul profundo + teal, sobre fondo casi negro,\n * con verde/ámbar/rojo reservados exclusivamente para los estados de negocio.\n * ========================================================================== */\n\n\nconst PALETA = Object.freeze({\n  base: Object.freeze({\n    fondo: '#070B14',\n    superficie: '#0D1523',\n    superficie2: '#131E33',\n    borde: '#1E2B47',\n    texto: '#E9EFFA',\n    suave: '#8DA0C0',\n  }),\n  marca: Object.freeze({\n    primario: '#3B82F6',\n    primario2: '#60A5FA',\n    teal: '#2DD4BF',\n    violeta: '#A78BFA',\n  }),\n  estado: Object.freeze({\n    [ESTADOS.APROBADA]: Object.freeze({ base: '#22C55E', texto: '#86EFAC', fondo: 'rgba(34,197,94,.12)' }),\n    [ESTADOS.REVISION]: Object.freeze({ base: '#F59E0B', texto: '#FCD34D', fondo: 'rgba(245,158,11,.12)' }),\n    [ESTADOS.RECHAZADA]: Object.freeze({ base: '#EF4444', texto: '#FCA5A5', fondo: 'rgba(239,68,68,.12)' }),\n  }),\n});\n\n/** Formatea un monto en colones: 2622800 -> \"₡2,622,800\". */\nfunction formatearMoneda(valor) {\n  const numero = Number(valor) || 0;\n  const negativo = numero < 0;\n  const entero = Math.abs(Math.round(numero)).toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');\n  return `${negativo ? '-' : ''}₡${entero}`;\n}\n\n/** Escapa texto para insertarlo con seguridad dentro del HTML. */\nfunction escaparHTML(texto) {\n  return String(texto ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\n/**\n * Codifica un texto a Base64 sin depender de Buffer ni btoa (no siempre\n * disponibles dentro del sandbox del nodo Code de n8n). Convierte a UTF-8\n * con encodeURIComponent y luego aplica el algoritmo Base64 estándar.\n */\nfunction codificarBase64(texto) {\n  const binario = encodeURIComponent(texto).replace(\n    /%([0-9A-F]{2})/g,\n    (_, hex) => String.fromCharCode(parseInt(hex, 16)),\n  );\n  const alfabeto = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';\n  let salida = '';\n\n  for (let indice = 0; indice < binario.length; indice += 3) {\n    const byte1 = binario.charCodeAt(indice);\n    const byte2 = indice + 1 < binario.length ? binario.charCodeAt(indice + 1) : NaN;\n    const byte3 = indice + 2 < binario.length ? binario.charCodeAt(indice + 2) : NaN;\n    const bloque = (byte1 << 16) | ((Number.isNaN(byte2) ? 0 : byte2) << 8) | (Number.isNaN(byte3) ? 0 : byte3);\n\n    salida += alfabeto[(bloque >> 18) & 63];\n    salida += alfabeto[(bloque >> 12) & 63];\n    salida += Number.isNaN(byte2) ? '=' : alfabeto[(bloque >> 6) & 63];\n    salida += Number.isNaN(byte3) ? '=' : alfabeto[bloque & 63];\n  }\n\n  return salida;\n}\n\nconst ETIQUETA_ESTADO = {\n  [ESTADOS.APROBADA]: 'Aprobada',\n  [ESTADOS.REVISION]: 'En revisión',\n  [ESTADOS.RECHAZADA]: 'Rechazada',\n};\n\nconst ORDEN_ESTADOS = [ESTADOS.APROBADA, ESTADOS.REVISION, ESTADOS.RECHAZADA];\n\n/**\n * Renderiza el reporte completo en HTML autocontenido (sin dependencias\n * externas: ni CDN, ni fuentes remotas, ni scripts).\n * @param {object} resumen salida de ReporteLote.resumen()\n * @param {object} acciones mapa estado -> acción del workflow\n */\nfunction renderReporteHTML(resumen, acciones = {}) {\n  const facturas = resumen.facturas ?? [];\n  const porEstado = resumen.porEstado ?? {};\n  const total = resumen.totalFacturas ?? 0;\n  const maximo = facturas.reduce((mayor, f) => Math.max(mayor, f.total ?? 0), 0) || 1;\n\n  const segmentos = ORDEN_ESTADOS.map((estado) => {\n    const porcentaje = total > 0 ? ((porEstado[estado] ?? 0) / total) * 100 : 0;\n    const color = PALETA.estado[estado]?.base ?? '#3B82F6';\n    return `<span class=\"seg\" style=\"width:${porcentaje.toFixed(2)}%;background:${color}\" title=\"${ETIQUETA_ESTADO[estado]}: ${porEstado[estado] ?? 0}\"></span>`;\n  }).join('');\n\n  const leyenda = ORDEN_ESTADOS.map((estado) => {\n    const color = PALETA.estado[estado]?.base ?? '#3B82F6';\n    const texto = PALETA.estado[estado]?.texto ?? '#E9EFFA';\n    return `<span class=\"chip\"><i style=\"background:${color}\"></i>${ETIQUETA_ESTADO[estado]}<b>${porEstado[estado] ?? 0}</b></span>`;\n  }).join('');\n\n  const filas = facturas\n    .map((factura) => {\n      const estado = factura.estado ?? ESTADOS.RECHAZADA;\n      const color = PALETA.estado[estado]?.base ?? '#3B82F6';\n      const ancho = Math.max(2, Math.round(((factura.total ?? 0) / maximo) * 100));\n      const detalle =\n        factura.tipo === 'extranjera' && factura.tipoCambio\n          ? `<span class=\"nota\">${escaparHTML(factura.monedaOriginal ?? '')} ${Number(factura.subtotalOriginal ?? 0).toLocaleString('en-US')} × ${factura.tipoCambio}</span>`\n          : '';\n      const motivo = factura.motivo\n        ? `<div class=\"motivo\">${escaparHTML(factura.motivo)}</div>`\n        : '';\n      const referencia = factura.referencia\n        ? '<span class=\"marca-ref\">monto referencial · no suma al lote</span>'\n        : '';\n      return `<tr style=\"--fila:${color}\">\n        <td class=\"num\"><b>${escaparHTML(factura.numero ?? '—')}</b>${motivo}</td>\n        <td><span class=\"tipo tipo--${escaparHTML(factura.tipo ?? '')}\">${escaparHTML(factura.tipo ?? '—')}</span>${detalle}</td>\n        <td>${escaparHTML(factura.proveedor ?? '—')}<div class=\"sub\">${escaparHTML(factura.cedulaJuridica ?? '')}</div></td>\n        <td class=\"fecha\">${escaparHTML(factura.fecha ?? '—')}</td>\n        <td><span class=\"pill pill--${estado}\">${ETIQUETA_ESTADO[estado] ?? estado}</span></td>\n        <td class=\"num\">${formatearMoneda(factura.subtotal)}</td>\n        <td class=\"num\">${formatearMoneda(factura.impuesto)}</td>\n        <td class=\"num total\">${formatearMoneda(factura.total)}<div class=\"barra\"><span style=\"width:${ancho}%;background:${color}\"></span></div>${referencia}</td>\n      </tr>`;\n    })\n    .join('\\n');\n\n  const tarjetasAccion = ORDEN_ESTADOS.map((estado) => {\n    const color = PALETA.estado[estado]?.base ?? '#3B82F6';\n    const fondo = PALETA.estado[estado]?.fondo ?? 'rgba(59,130,246,.12)';\n    const texto = PALETA.estado[estado]?.texto ?? '#E9EFFA';\n    return `<div class=\"accion\" style=\"--color:${color};--fondo:${fondo};--texto:${texto}\">\n        <span class=\"accion__estado\">${ETIQUETA_ESTADO[estado]}</span>\n        <span class=\"accion__cuenta\">${porEstado[estado] ?? 0} factura${(porEstado[estado] ?? 0) === 1 ? '' : 's'}</span>\n        <span class=\"accion__texto\">${escaparHTML(acciones[estado] ?? '—')}</span>\n      </div>`;\n  }).join('');\n\n  const generadas = new Date(resumen.generadoEn ?? Date.now());\n  const sello = Number.isNaN(generadas.getTime())\n    ? new Date().toISOString().slice(0, 16).replace('T', ' ')\n    : generadas.toISOString().slice(0, 16).replace('T', ' ');\n\n  const proveedorFilas = (resumen.porProveedor ?? [])\n    .map(\n      (p) =>\n        `<tr><td>${escaparHTML(p.proveedor)}</td><td class=\"num\">${p.facturas}</td><td class=\"num\">${formatearMoneda(p.total)}</td></tr>`,\n    )\n    .join('\\n');\n\n  const muestras = [\n    ['Fondo', PALETA.base.fondo],\n    ['Superficie', PALETA.base.superficie],\n    ['Borde', PALETA.base.borde],\n    ['Primario', PALETA.marca.primario],\n    ['Teal', PALETA.marca.teal],\n    ['Violeta', PALETA.marca.violeta],\n    ['Aprobada', PALETA.estado[ESTADOS.APROBADA].base],\n    ['Revisión', PALETA.estado[ESTADOS.REVISION].base],\n    ['Rechazada', PALETA.estado[ESTADOS.RECHAZADA].base],\n  ]\n    .map(\n      ([nombre, hex]) =>\n        `<div class=\"swatch\"><span class=\"swatch__color\" style=\"background:${hex}\"></span><span class=\"swatch__name\">${nombre}</span><span class=\"swatch__hex\">${hex}</span></div>`,\n    )\n    .join('');\n\n  return `<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>FacturaBot · Reporte del lote</title>\n<style>\n  :root{\n    --fondo:${PALETA.base.fondo};\n    --sup:${PALETA.base.superficie};\n    --sup2:${PALETA.base.superficie2};\n    --borde:${PALETA.base.borde};\n    --texto:${PALETA.base.texto};\n    --suave:${PALETA.base.suave};\n    --primario:${PALETA.marca.primario};\n    --primario2:${PALETA.marca.primario2};\n    --teal:${PALETA.marca.teal};\n    --violeta:${PALETA.marca.violeta};\n    --radio:16px;\n    --sombra:0 24px 60px -30px rgba(2,6,23,.95);\n  }\n  *{box-sizing:border-box;margin:0;padding:0}\n  body{\n    background:\n      radial-gradient(1100px 520px at 12% -8%, rgba(59,130,246,.16), transparent 60%),\n      radial-gradient(900px 480px at 92% 0%, rgba(45,212,191,.12), transparent 55%),\n      var(--fondo);\n    color:var(--texto);\n    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;\n    -webkit-font-smoothing:antialiased;\n    line-height:1.5;\n    padding:36px 20px 56px;\n  }\n  .hoja{max-width:1180px;margin:0 auto}\n\n  /* ---------- cabecera ---------- */\n  .cabecera{\n    display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;\n    background:linear-gradient(140deg,rgba(19,30,51,.96),rgba(13,21,35,.96));\n    border:1px solid var(--borde);border-radius:var(--radio);\n    padding:24px 26px;box-shadow:var(--sombra);position:relative;overflow:hidden;\n  }\n  .cabecera::before{\n    content:'';position:absolute;inset:0 0 auto 0;height:3px;\n    background:linear-gradient(90deg,var(--primario),var(--teal),var(--violeta));\n  }\n  .marca{display:flex;align-items:center;gap:16px}\n  .logo{\n    width:52px;height:52px;flex:none;border-radius:14px;\n    display:grid;place-items:center;font-weight:800;letter-spacing:.5px;font-size:18px;\n    color:#06121f;background:linear-gradient(135deg,var(--primario2),var(--teal));\n    box-shadow:0 10px 26px -12px rgba(45,212,191,.8);\n  }\n  h1{font-size:23px;font-weight:700;letter-spacing:-.3px}\n  .sub{color:var(--suave);font-size:13.5px}\n  .sello{\n    font-size:12.5px;color:var(--suave);border:1px solid var(--borde);\n    background:rgba(7,11,20,.55);border-radius:999px;padding:7px 14px;white-space:nowrap;\n  }\n\n  /* ---------- KPIs ---------- */\n  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:18px}\n  .kpi{\n    background:linear-gradient(160deg,var(--sup2),var(--sup));\n    border:1px solid var(--borde);border-radius:var(--radio);padding:18px 18px 16px;\n    box-shadow:var(--sombra);position:relative;overflow:hidden;\n  }\n  .kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acento,var(--primario))}\n  .kpi__etiqueta{display:block;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--suave)}\n  .kpi__valor{display:block;font-size:27px;font-weight:700;margin-top:6px;letter-spacing:-.6px;\n    font-variant-numeric:tabular-nums}\n  .kpi__nota{display:block;font-size:12px;color:var(--suave);margin-top:3px}\n\n  /* ---------- paneles ---------- */\n  .panel{\n    background:var(--sup);border:1px solid var(--borde);border-radius:var(--radio);\n    padding:22px 24px;margin-top:18px;box-shadow:var(--sombra);\n  }\n  .panel h2{font-size:15.5px;font-weight:650;letter-spacing:.01em;margin-bottom:16px;display:flex;align-items:center;gap:9px}\n  .panel h2::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(45,212,191,.14)}\n\n  /* ---------- barra de distribución ---------- */\n  .barra-dist{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--sup2);border:1px solid var(--borde)}\n  .seg{display:block;height:100%}\n  .leyenda{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}\n  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--sup2);border:1px solid var(--borde);\n    border-radius:999px;padding:6px 13px;font-size:12.5px;color:var(--suave)}\n  .chip i{width:9px;height:9px;border-radius:50%}\n  .chip b{color:var(--texto);font-variant-numeric:tabular-nums}\n\n  /* ---------- tabla ---------- */\n  .tabla-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--borde)}\n  table{width:100%;border-collapse:collapse;min-width:860px}\n  thead th{\n    background:var(--sup2);color:var(--suave);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;\n    text-align:left;padding:12px 14px;font-weight:600;border-bottom:1px solid var(--borde);white-space:nowrap;\n  }\n  tbody td{padding:13px 14px;border-bottom:1px solid rgba(30,43,71,.6);vertical-align:top;font-size:13.5px}\n  tbody tr:last-child td{border-bottom:none}\n  tbody tr{position:relative}\n  tbody tr td:first-child{box-shadow:inset 3px 0 0 var(--fila,var(--primario))}\n  tbody tr:hover{background:rgba(59,130,246,.05)}\n  .num{font-variant-numeric:tabular-nums;white-space:nowrap}\n  .total{font-weight:650}\n  .fecha{color:var(--suave);white-space:nowrap}\n  .sub,.nota{display:block;font-size:11.5px;color:var(--suave);margin-top:3px}\n  .motivo{font-size:11.5px;color:#FCA5A5;margin-top:5px;max-width:320px}\n  .marca-ref{display:block;font-size:11px;color:var(--suave);margin-top:4px;font-style:italic}\n\n  .pill{display:inline-block;padding:4px 11px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}\n  .pill--aprobada{background:rgba(34,197,94,.13);color:${PALETA.estado[ESTADOS.APROBADA].texto};border:1px solid rgba(34,197,94,.3)}\n  .pill--revision{background:rgba(245,158,11,.13);color:${PALETA.estado[ESTADOS.REVISION].texto};border:1px solid rgba(245,158,11,.3)}\n  .pill--rechazada{background:rgba(239,68,68,.13);color:${PALETA.estado[ESTADOS.RECHAZADA].texto};border:1px solid rgba(239,68,68,.3)}\n\n  .tipo{display:inline-block;padding:3px 10px;border-radius:7px;font-size:11.5px;font-weight:600;\n    background:rgba(59,130,246,.12);color:#93C5FD;border:1px solid rgba(59,130,246,.25)}\n  .tipo--exenta{background:rgba(167,139,250,.12);color:#C4B5FD;border-color:rgba(167,139,250,.25)}\n  .tipo--extranjera{background:rgba(45,212,191,.12);color:#5EEAD4;border-color:rgba(45,212,191,.25)}\n  .tipo--credito{background:rgba(239,68,68,.12);color:#FCA5A5;border-color:rgba(239,68,68,.25)}\n\n  .barra{display:block;height:4px;border-radius:999px;background:var(--sup2);margin-top:6px;overflow:hidden;width:110px}\n  .barra span{display:block;height:100%;border-radius:999px}\n\n  /* ---------- acciones ---------- */\n  .acciones{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}\n  .accion{background:var(--fondo);border:1px solid var(--borde);border-left:3px solid var(--color);\n    border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:4px}\n  .accion__estado{font-size:13px;font-weight:650;color:var(--texto)}\n  .accion__cuenta{font-size:11.5px;color:var(--suave)}\n  .accion__texto{margin-top:7px;font-size:12.5px;color:var(--texto);background:var(--fondo);\n    display:inline-block;padding:5px 11px;border-radius:8px;border:1px solid var(--borde)}\n\n  /* ---------- pie / paleta ---------- */\n  .paleta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}\n  .swatch{background:var(--sup2);border:1px solid var(--borde);border-radius:11px;padding:10px 12px;display:flex;align-items:center;gap:9px}\n  .swatch__color{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.12);flex:none}\n  .swatch__name{font-size:12px;color:var(--suave)}\n  .swatch__hex{margin-left:auto;font-size:11.5px;color:var(--texto);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}\n  .firma{margin-top:18px;text-align:center;color:var(--suave);font-size:12px}\n\n  @media (max-width:640px){\n    body{padding:20px 12px 40px}\n    .cabecera{padding:20px}\n    .kpi__valor{font-size:23px}\n  }\n</style>\n</head>\n<body>\n<div class=\"hoja\">\n\n  <header class=\"cabecera\">\n    <div class=\"marca\">\n      <div class=\"logo\">FB</div>\n      <div>\n        <h1>FacturaBot</h1>\n        <p class=\"sub\">Reporte del lote · Programación Orientada a Objetos en el nodo Code de n8n</p>\n      </div>\n    </div>\n    <div class=\"sello\">Generado: ${sello}</div>\n  </header>\n\n  <section class=\"kpis\">\n    <div class=\"kpi\" style=\"--acento:${PALETA.marca.primario}\">\n      <span class=\"kpi__etiqueta\">Facturas procesadas</span>\n      <span class=\"kpi__valor\">${total}</span>\n      <span class=\"kpi__nota\">lote completo</span>\n    </div>\n    <div class=\"kpi\" style=\"--acento:${PALETA.estado[ESTADOS.APROBADA].base}\">\n      <span class=\"kpi__etiqueta\">Aprobadas</span>\n      <span class=\"kpi__valor\">${porEstado[ESTADOS.APROBADA] ?? 0}</span>\n      <span class=\"kpi__nota\">${escaparHTML(acciones[ESTADOS.APROBADA] ?? '')}</span>\n    </div>\n    <div class=\"kpi\" style=\"--acento:${PALETA.estado[ESTADOS.REVISION].base}\">\n      <span class=\"kpi__etiqueta\">En revisión</span>\n      <span class=\"kpi__valor\">${porEstado[ESTADOS.REVISION] ?? 0}</span>\n      <span class=\"kpi__nota\">${escaparHTML(acciones[ESTADOS.REVISION] ?? '')}</span>\n    </div>\n    <div class=\"kpi\" style=\"--acento:${PALETA.estado[ESTADOS.RECHAZADA].base}\">\n      <span class=\"kpi__etiqueta\">Rechazadas</span>\n      <span class=\"kpi__valor\">${porEstado[ESTADOS.RECHAZADA] ?? 0}</span>\n      <span class=\"kpi__nota\">${escaparHTML(acciones[ESTADOS.RECHAZADA] ?? '')}</span>\n    </div>\n    <div class=\"kpi\" style=\"--acento:${PALETA.marca.teal}\">\n      <span class=\"kpi__etiqueta\">Total a registrar</span>\n      <span class=\"kpi__valor\">${formatearMoneda(resumen.total)}</span>\n      <span class=\"kpi__nota\">excluye facturas rechazadas</span>\n    </div>\n    <div class=\"kpi\" style=\"--acento:${PALETA.marca.violeta}\">\n      <span class=\"kpi__etiqueta\">IVA acumulado</span>\n      <span class=\"kpi__valor\">${formatearMoneda(resumen.impuesto)}</span>\n      <span class=\"kpi__nota\">tasa efectiva ${resumen.tasaImpuestoEfectiva ?? 0}%</span>\n    </div>\n  </section>\n\n  <section class=\"panel\">\n    <h2>Distribución del lote por estado</h2>\n    <div class=\"barra-dist\">${segmentos}</div>\n    <div class=\"leyenda\">${leyenda}</div>\n  </section>\n\n  <section class=\"panel\">\n    <h2>Detalle de facturas</h2>\n    <div class=\"tabla-scroll\">\n      <table>\n        <thead>\n          <tr>\n            <th>Factura</th><th>Tipo</th><th>Proveedor</th><th>Fecha</th>\n            <th>Estado</th><th>Subtotal</th><th>IVA</th><th>Total</th>\n          </tr>\n        </thead>\n        <tbody>\n${filas}\n        </tbody>\n      </table>\n    </div>\n  </section>\n\n  <section class=\"panel\">\n    <h2>Acciones disparadas por cada rama</h2>\n    <div class=\"acciones\">${tarjetasAccion}</div>\n  </section>\n\n  <section class=\"panel\">\n    <h2>Totales por proveedor</h2>\n    <div class=\"tabla-scroll\">\n      <table>\n        <thead><tr><th>Proveedor</th><th>Facturas</th><th>Total</th></tr></thead>\n        <tbody>\n${proveedorFilas}\n        </tbody>\n      </table>\n    </div>\n  </section>\n\n  <section class=\"panel\">\n    <h2>Paleta \"Midnight Ledger\"</h2>\n    <div class=\"paleta\">${muestras}</div>\n  </section>\n\n  <p class=\"firma\">FacturaBot · ${total} facturas · ${escaparHTML((resumen.monedas ?? []).join(' · '))} · generado el ${sello}</p>\n</div>\n</body>\n</html>`;\n}\n\n\n/* ============================================================================\n * FacturaBot · ReporteLote (nodo 9 · \"Reporte del lote\")\n * ----------------------------------------------------------------------------\n * ENCAPSULAMIENTO: la colección de facturas es privada (#facturas) y solo se\n * manipula a través de `agregar()`. `resumen()` consolida las métricas del\n * lote.\n *\n * REGLA DE NEGOCIO CLAVE: las sumas (subtotal, impuesto, total) SOLO incluyen\n * facturas NO rechazadas. El monto de las rechazadas se reporta aparte\n * (montoRechazado) para que gerencia vea el dinero en disputa sin que entre\n * en la contabilidad del lote.\n * ========================================================================== */\n\n\nclass ReporteLote {\n  #facturas = [];\n\n  /**\n   * Agrega un registro de factura ya procesado (el `json` que sale del nodo 3).\n   * @param {object} f registro normalizado { estado, subtotal, impuesto, total, ... }\n   */\n  agregar(f) {\n    if (!f || typeof f !== 'object') {\n      throw new TypeError('ReporteLote.agregar() requiere un registro de factura.');\n    }\n    this.#facturas.push(f);\n    return this;\n  }\n\n  /** Copia defensiva: nadie puede mutar la colección interna. */\n  get facturas() {\n    return [...this.#facturas];\n  }\n\n  get tamano() {\n    return this.#facturas.length;\n  }\n\n  /** Facturas que sí computan en los totales del lote. */\n  get activas() {\n    return this.#facturas.filter((f) => f.estado !== ESTADOS.RECHAZADA);\n  }\n\n  /** Facturas rechazadas (se excluyen de las sumas). */\n  get rechazadas() {\n    return this.#facturas.filter((f) => f.estado === ESTADOS.RECHAZADA);\n  }\n\n  /**\n   * Consolidación de métricas del lote.\n   */\n  resumen() {\n    const total = this.#facturas.length;\n\n    const porEstado = {\n      [ESTADOS.APROBADA]: 0,\n      [ESTADOS.REVISION]: 0,\n      [ESTADOS.RECHAZADA]: 0,\n    };\n    for (const f of this.#facturas) {\n      porEstado[f.estado] = (porEstado[f.estado] ?? 0) + 1;\n    }\n\n    const activas = this.activas;\n    const subtotal = activas.reduce((acumulado, f) => acumulado + (f.subtotal ?? 0), 0);\n    const impuesto = activas.reduce((acumulado, f) => acumulado + (f.impuesto ?? 0), 0);\n    const totalMonto = activas.reduce((acumulado, f) => acumulado + (f.total ?? 0), 0);\n\n    const montoRechazado = this.rechazadas.reduce(\n      (acumulado, f) => acumulado + (f.total ?? 0),\n      0,\n    );\n\n    const monedas = [...new Set(this.#facturas.map((f) => f.monedaOriginal ?? MONEDA_LOCAL))];\n\n    const porProveedor = [...new Set(this.#facturas.map((f) => f.proveedor))]\n      .map((proveedor) => {\n        const propias = this.#facturas.filter((f) => f.proveedor === proveedor);\n        const totalProveedor = propias\n          .filter((f) => f.estado !== ESTADOS.RECHAZADA)\n          .reduce((acumulado, f) => acumulado + (f.total ?? 0), 0);\n        return { proveedor, facturas: propias.length, total: totalProveedor };\n      })\n      .sort((a, b) => b.total - a.total);\n\n    return {\n      generadoEn: new Date().toISOString(),\n      totalFacturas: total,\n      porEstado,\n      subtotal,\n      impuesto,\n      total: totalMonto,\n      montoRechazado,\n      tasaImpuestoEfectiva: subtotal > 0 ? Number(((impuesto / subtotal) * 100).toFixed(2)) : 0,\n      monedas,\n      porProveedor,\n      facturas: this.#facturas.map((f) => ({\n        numero: f.numero,\n        tipo: f.tipo,\n        proveedor: f.proveedor,\n        cedulaJuridica: f.cedulaJuridica,\n        fecha: f.fecha,\n        estado: f.estado,\n        nivel: f.nivel,\n        motivo: f.motivo,\n        subtotal: f.subtotal ?? 0,\n        impuesto: f.impuesto ?? 0,\n        total: f.total ?? 0,\n        moneda: f.moneda ?? MONEDA_LOCAL,\n        monedaOriginal: f.monedaOriginal ?? null,\n        tipoCambio: f.tipoCambio ?? null,\n        subtotalOriginal: f.subtotalOriginal ?? null,\n        referencia: Boolean(f.referencia),\n        lineas: f.lineas ?? [],\n      })),\n    };\n  }\n}\n\n\n/* ==========================================================================\n * Ejecución del nodo (Run Once for All Items)\n * ======================================================================== */\nconst items = $input.all();\n\nconst reporte = new ReporteLote();\nfor (const item of items) {\n  reporte.agregar(item.json);\n}\n\nconst resumen = reporte.resumen();\nconst html = renderReporteHTML(resumen, ACCIONES);\n\nreturn [\n  {\n    json: {\n      ...resumen,\n      html,\n      archivo: 'reporte-lote.html',\n    },\n    binary: {\n      'reporte-lote.html': {\n        data: codificarBase64(html),\n        mimeType: 'text/html',\n        fileName: 'reporte-lote.html',\n      },\n    },\n  },\n];\n"
+      },
+      "id": "fb000000-0000-4000-8000-000000000009",
+      "name": "Reporte del lote",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Datos de prueba",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datos de prueba": {
+      "main": [
+        [
+          {
+            "node": "Procesar facturas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar facturas": {
+      "main": [
+        [
+          {
+            "node": "Clasificar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar": {
+      "main": [
+        [
+          {
+            "node": "Aprobada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Revisión",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rechazada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aprobada": {
+      "main": [
+        [
+          {
+            "node": "Unificar lote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisión": {
+      "main": [
+        [
+          {
+            "node": "Unificar lote",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Rechazada": {
+      "main": [
+        [
+          {
+            "node": "Unificar lote",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Unificar lote": {
+      "main": [
+        [
+          {
+            "node": "Reporte del lote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [],
+  "versionId": "fb000000-0000-4000-8000-0000000000ff"
+}

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FacturaBot · Reporte del lote</title>
+<style>
+  :root{
+    --fondo:#070B14;
+    --sup:#0D1523;
+    --sup2:#131E33;
+    --borde:#1E2B47;
+    --texto:#E9EFFA;
+    --suave:#8DA0C0;
+    --primario:#3B82F6;
+    --primario2:#60A5FA;
+    --teal:#2DD4BF;
+    --violeta:#A78BFA;
+    --radio:16px;
+    --sombra:0 24px 60px -30px rgba(2,6,23,.95);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 520px at 12% -8%, rgba(59,130,246,.16), transparent 60%),
+      radial-gradient(900px 480px at 92% 0%, rgba(45,212,191,.12), transparent 55%),
+      var(--fondo);
+    color:var(--texto);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    padding:36px 20px 56px;
+  }
+  .hoja{max-width:1180px;margin:0 auto}
+
+  /* ---------- cabecera ---------- */
+  .cabecera{
+    display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;
+    background:linear-gradient(140deg,rgba(19,30,51,.96),rgba(13,21,35,.96));
+    border:1px solid var(--borde);border-radius:var(--radio);
+    padding:24px 26px;box-shadow:var(--sombra);position:relative;overflow:hidden;
+  }
+  .cabecera::before{
+    content:'';position:absolute;inset:0 0 auto 0;height:3px;
+    background:linear-gradient(90deg,var(--primario),var(--teal),var(--violeta));
+  }
+  .marca{display:flex;align-items:center;gap:16px}
+  .logo{
+    width:52px;height:52px;flex:none;border-radius:14px;
+    display:grid;place-items:center;font-weight:800;letter-spacing:.5px;font-size:18px;
+    color:#06121f;background:linear-gradient(135deg,var(--primario2),var(--teal));
+    box-shadow:0 10px 26px -12px rgba(45,212,191,.8);
+  }
+  h1{font-size:23px;font-weight:700;letter-spacing:-.3px}
+  .sub{color:var(--suave);font-size:13.5px}
+  .sello{
+    font-size:12.5px;color:var(--suave);border:1px solid var(--borde);
+    background:rgba(7,11,20,.55);border-radius:999px;padding:7px 14px;white-space:nowrap;
+  }
+
+  /* ---------- KPIs ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:18px}
+  .kpi{
+    background:linear-gradient(160deg,var(--sup2),var(--sup));
+    border:1px solid var(--borde);border-radius:var(--radio);padding:18px 18px 16px;
+    box-shadow:var(--sombra);position:relative;overflow:hidden;
+  }
+  .kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acento,var(--primario))}
+  .kpi__etiqueta{display:block;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--suave)}
+  .kpi__valor{display:block;font-size:27px;font-weight:700;margin-top:6px;letter-spacing:-.6px;
+    font-variant-numeric:tabular-nums}
+  .kpi__nota{display:block;font-size:12px;color:var(--suave);margin-top:3px}
+
+  /* ---------- paneles ---------- */
+  .panel{
+    background:var(--sup);border:1px solid var(--borde);border-radius:var(--radio);
+    padding:22px 24px;margin-top:18px;box-shadow:var(--sombra);
+  }
+  .panel h2{font-size:15.5px;font-weight:650;letter-spacing:.01em;margin-bottom:16px;display:flex;align-items:center;gap:9px}
+  .panel h2::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(45,212,191,.14)}
+
+  /* ---------- barra de distribución ---------- */
+  .barra-dist{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--sup2);border:1px solid var(--borde)}
+  .seg{display:block;height:100%}
+  .leyenda{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--sup2);border:1px solid var(--borde);
+    border-radius:999px;padding:6px 13px;font-size:12.5px;color:var(--suave)}
+  .chip i{width:9px;height:9px;border-radius:50%}
+  .chip b{color:var(--texto);font-variant-numeric:tabular-nums}
+
+  /* ---------- tabla ---------- */
+  .tabla-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--borde)}
+  table{width:100%;border-collapse:collapse;min-width:860px}
+  thead th{
+    background:var(--sup2);color:var(--suave);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    text-align:left;padding:12px 14px;font-weight:600;border-bottom:1px solid var(--borde);white-space:nowrap;
+  }
+  tbody td{padding:13px 14px;border-bottom:1px solid rgba(30,43,71,.6);vertical-align:top;font-size:13.5px}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr{position:relative}
+  tbody tr td:first-child{box-shadow:inset 3px 0 0 var(--fila,var(--primario))}
+  tbody tr:hover{background:rgba(59,130,246,.05)}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .total{font-weight:650}
+  .fecha{color:var(--suave);white-space:nowrap}
+  .sub,.nota{display:block;font-size:11.5px;color:var(--suave);margin-top:3px}
+  .motivo{font-size:11.5px;color:#FCA5A5;margin-top:5px;max-width:320px}
+  .marca-ref{display:block;font-size:11px;color:var(--suave);margin-top:4px;font-style:italic}
+
+  .pill{display:inline-block;padding:4px 11px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .pill--aprobada{background:rgba(34,197,94,.13);color:#86EFAC;border:1px solid rgba(34,197,94,.3)}
+  .pill--revision{background:rgba(245,158,11,.13);color:#FCD34D;border:1px solid rgba(245,158,11,.3)}
+  .pill--rechazada{background:rgba(239,68,68,.13);color:#FCA5A5;border:1px solid rgba(239,68,68,.3)}
+
+  .tipo{display:inline-block;padding:3px 10px;border-radius:7px;font-size:11.5px;font-weight:600;
+    background:rgba(59,130,246,.12);color:#93C5FD;border:1px solid rgba(59,130,246,.25)}
+  .tipo--exenta{background:rgba(167,139,250,.12);color:#C4B5FD;border-color:rgba(167,139,250,.25)}
+  .tipo--extranjera{background:rgba(45,212,191,.12);color:#5EEAD4;border-color:rgba(45,212,191,.25)}
+  .tipo--credito{background:rgba(239,68,68,.12);color:#FCA5A5;border-color:rgba(239,68,68,.25)}
+
+  .barra{display:block;height:4px;border-radius:999px;background:var(--sup2);margin-top:6px;overflow:hidden;width:110px}
+  .barra span{display:block;height:100%;border-radius:999px}
+
+  /* ---------- acciones ---------- */
+  .acciones{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+  .accion{background:var(--fondo);border:1px solid var(--borde);border-left:3px solid var(--color);
+    border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:4px}
+  .accion__estado{font-size:13px;font-weight:650;color:var(--texto)}
+  .accion__cuenta{font-size:11.5px;color:var(--suave)}
+  .accion__texto{margin-top:7px;font-size:12.5px;color:var(--texto);background:var(--fondo);
+    display:inline-block;padding:5px 11px;border-radius:8px;border:1px solid var(--borde)}
+
+  /* ---------- pie / paleta ---------- */
+  .paleta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .swatch{background:var(--sup2);border:1px solid var(--borde);border-radius:11px;padding:10px 12px;display:flex;align-items:center;gap:9px}
+  .swatch__color{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.12);flex:none}
+  .swatch__name{font-size:12px;color:var(--suave)}
+  .swatch__hex{margin-left:auto;font-size:11.5px;color:var(--texto);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .firma{margin-top:18px;text-align:center;color:var(--suave);font-size:12px}
+
+  @media (max-width:640px){
+    body{padding:20px 12px 40px}
+    .cabecera{padding:20px}
+    .kpi__valor{font-size:23px}
+  }
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <header class="cabecera">
+    <div class="marca">
+      <div class="logo">FB</div>
+      <div>
+        <h1>FacturaBot</h1>
+        <p class="sub">Reporte del lote · Programación Orientada a Objetos en el nodo Code de n8n</p>
+      </div>
+    </div>
+    <div class="sello">Generado: 2026-10-19 20:41</div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi" style="--acento:#3B82F6">
+      <span class="kpi__etiqueta">Facturas procesadas</span>
+      <span class="kpi__valor">7</span>
+      <span class="kpi__nota">lote completo</span>
+    </div>
+    <div class="kpi" style="--acento:#22C55E">
+      <span class="kpi__etiqueta">Aprobadas</span>
+      <span class="kpi__valor">4</span>
+      <span class="kpi__nota">Registrar en contabilidad</span>
+    </div>
+    <div class="kpi" style="--acento:#F59E0B">
+      <span class="kpi__etiqueta">En revisión</span>
+      <span class="kpi__valor">1</span>
+      <span class="kpi__nota">Enviar a gerencia</span>
+    </div>
+    <div class="kpi" style="--acento:#EF4444">
+      <span class="kpi__etiqueta">Rechazadas</span>
+      <span class="kpi__valor">2</span>
+      <span class="kpi__nota">Devolver al proveedor</span>
+    </div>
+    <div class="kpi" style="--acento:#2DD4BF">
+      <span class="kpi__etiqueta">Total a registrar</span>
+      <span class="kpi__valor">₡2,622,800</span>
+      <span class="kpi__nota">excluye facturas rechazadas</span>
+    </div>
+    <div class="kpi" style="--acento:#A78BFA">
+      <span class="kpi__etiqueta">IVA acumulado</span>
+      <span class="kpi__valor">₡137,800</span>
+      <span class="kpi__nota">tasa efectiva 5.55%</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Distribución del lote por estado</h2>
+    <div class="barra-dist"><span class="seg" style="width:57.14%;background:#22C55E" title="Aprobada: 4"></span><span class="seg" style="width:14.29%;background:#F59E0B" title="En revisión: 1"></span><span class="seg" style="width:28.57%;background:#EF4444" title="Rechazada: 2"></span></div>
+    <div class="leyenda"><span class="chip"><i style="background:#22C55E"></i>Aprobada<b>4</b></span><span class="chip"><i style="background:#F59E0B"></i>En revisión<b>1</b></span><span class="chip"><i style="background:#EF4444"></i>Rechazada<b>2</b></span></div>
+  </section>
+
+  <section class="panel">
+    <h2>Detalle de facturas</h2>
+    <div class="tabla-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Factura</th><th>Tipo</th><th>Proveedor</th><th>Fecha</th>
+            <th>Estado</th><th>Subtotal</th><th>IVA</th><th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+<tr style="--fila:#22C55E">
+        <td class="num"><b>F-001</b></td>
+        <td><span class="tipo tipo--nacional">nacional</span></td>
+        <td>Distribuidora Central<div class="sub">3-101-123456</div></td>
+        <td class="fecha">2026-09-10</td>
+        <td><span class="pill pill--aprobada">Aprobada</span></td>
+        <td class="num">₡50,000</td>
+        <td class="num">₡6,500</td>
+        <td class="num total">₡56,500<div class="barra"><span style="width:4%;background:#22C55E"></span></div></td>
+      </tr>
+<tr style="--fila:#22C55E">
+        <td class="num"><b>F-002</b></td>
+        <td><span class="tipo tipo--exenta">exenta</span></td>
+        <td>Clínica San José<div class="sub">3-102-654321</div></td>
+        <td class="fecha">2026-09-12</td>
+        <td><span class="pill pill--aprobada">Aprobada</span></td>
+        <td class="num">₡150,000</td>
+        <td class="num">₡0</td>
+        <td class="num total">₡150,000<div class="barra"><span style="width:12%;background:#22C55E"></span></div></td>
+      </tr>
+<tr style="--fila:#22C55E">
+        <td class="num"><b>F-003</b></td>
+        <td><span class="tipo tipo--extranjera">extranjera</span><span class="nota">USD 2,500 × 510</span></td>
+        <td>Cloud Services Inc.<div class="sub">3-012-000111</div></td>
+        <td class="fecha">2026-09-15</td>
+        <td><span class="pill pill--aprobada">Aprobada</span></td>
+        <td class="num">₡1,275,000</td>
+        <td class="num">₡0</td>
+        <td class="num total">₡1,275,000<div class="barra"><span style="width:100%;background:#22C55E"></span></div></td>
+      </tr>
+<tr style="--fila:#EF4444">
+        <td class="num"><b>F-004</b><div class="motivo">La cédula jurídica &quot;123&quot; no cumple el formato 3-XXX-XXXXXX.</div></td>
+        <td><span class="tipo tipo--nacional">nacional</span></td>
+        <td>Ferretería El Clavo<div class="sub">123</div></td>
+        <td class="fecha">2026-09-20</td>
+        <td><span class="pill pill--rechazada">Rechazada</span></td>
+        <td class="num">₡5,000</td>
+        <td class="num">₡0</td>
+        <td class="num total">₡5,000<div class="barra"><span style="width:2%;background:#EF4444"></span></div><span class="marca-ref">monto referencial · no suma al lote</span></td>
+      </tr>
+<tr style="--fila:#22C55E">
+        <td class="num"><b>F-005</b></td>
+        <td><span class="tipo tipo--nacional">nacional</span></td>
+        <td>TecnoMundo<div class="sub">3-101-777888</div></td>
+        <td class="fecha">2026-09-25</td>
+        <td><span class="pill pill--aprobada">Aprobada</span></td>
+        <td class="num">₡1,000,000</td>
+        <td class="num">₡130,000</td>
+        <td class="num total">₡1,130,000<div class="barra"><span style="width:89%;background:#22C55E"></span></div></td>
+      </tr>
+<tr style="--fila:#EF4444">
+        <td class="num"><b>F-006</b><div class="motivo">El tipo &quot;credito&quot; no está soportado. Tipos válidos: nacional, exenta, extranjera.</div></td>
+        <td><span class="tipo tipo--credito">credito</span></td>
+        <td>Proveedor X<div class="sub">3-101-999000</div></td>
+        <td class="fecha">2026-09-28</td>
+        <td><span class="pill pill--rechazada">Rechazada</span></td>
+        <td class="num">₡10,000</td>
+        <td class="num">₡0</td>
+        <td class="num total">₡10,000<div class="barra"><span style="width:2%;background:#EF4444"></span></div><span class="marca-ref">monto referencial · no suma al lote</span></td>
+      </tr>
+<tr style="--fila:#F59E0B">
+        <td class="num"><b>F-007</b><div class="motivo">La fecha 2030-01-15 es futura: requiere validación de gerencia.</div></td>
+        <td><span class="tipo tipo--nacional">nacional</span></td>
+        <td>Imprenta Futura<div class="sub">3-101-444555</div></td>
+        <td class="fecha">2030-01-15</td>
+        <td><span class="pill pill--revision">En revisión</span></td>
+        <td class="num">₡10,000</td>
+        <td class="num">₡1,300</td>
+        <td class="num total">₡11,300<div class="barra"><span style="width:2%;background:#F59E0B"></span></div></td>
+      </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Acciones disparadas por cada rama</h2>
+    <div class="acciones"><div class="accion" style="--color:#22C55E;--fondo:rgba(34,197,94,.12);--texto:#86EFAC">
+        <span class="accion__estado">Aprobada</span>
+        <span class="accion__cuenta">4 facturas</span>
+        <span class="accion__texto">Registrar en contabilidad</span>
+      </div><div class="accion" style="--color:#F59E0B;--fondo:rgba(245,158,11,.12);--texto:#FCD34D">
+        <span class="accion__estado">En revisión</span>
+        <span class="accion__cuenta">1 factura</span>
+        <span class="accion__texto">Enviar a gerencia</span>
+      </div><div class="accion" style="--color:#EF4444;--fondo:rgba(239,68,68,.12);--texto:#FCA5A5">
+        <span class="accion__estado">Rechazada</span>
+        <span class="accion__cuenta">2 facturas</span>
+        <span class="accion__texto">Devolver al proveedor</span>
+      </div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Totales por proveedor</h2>
+    <div class="tabla-scroll">
+      <table>
+        <thead><tr><th>Proveedor</th><th>Facturas</th><th>Total</th></tr></thead>
+        <tbody>
+<tr><td>Cloud Services Inc.</td><td class="num">1</td><td class="num">₡1,275,000</td></tr>
+<tr><td>TecnoMundo</td><td class="num">1</td><td class="num">₡1,130,000</td></tr>
+<tr><td>Clínica San José</td><td class="num">1</td><td class="num">₡150,000</td></tr>
+<tr><td>Distribuidora Central</td><td class="num">1</td><td class="num">₡56,500</td></tr>
+<tr><td>Imprenta Futura</td><td class="num">1</td><td class="num">₡11,300</td></tr>
+<tr><td>Ferretería El Clavo</td><td class="num">1</td><td class="num">₡0</td></tr>
+<tr><td>Proveedor X</td><td class="num">1</td><td class="num">₡0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Paleta "Midnight Ledger"</h2>
+    <div class="paleta"><div class="swatch"><span class="swatch__color" style="background:#070B14"></span><span class="swatch__name">Fondo</span><span class="swatch__hex">#070B14</span></div><div class="swatch"><span class="swatch__color" style="background:#0D1523"></span><span class="swatch__name">Superficie</span><span class="swatch__hex">#0D1523</span></div><div class="swatch"><span class="swatch__color" style="background:#1E2B47"></span><span class="swatch__name">Borde</span><span class="swatch__hex">#1E2B47</span></div><div class="swatch"><span class="swatch__color" style="background:#3B82F6"></span><span class="swatch__name">Primario</span><span class="swatch__hex">#3B82F6</span></div><div class="swatch"><span class="swatch__color" style="background:#2DD4BF"></span><span class="swatch__name">Teal</span><span class="swatch__hex">#2DD4BF</span></div><div class="swatch"><span class="swatch__color" style="background:#A78BFA"></span><span class="swatch__name">Violeta</span><span class="swatch__hex">#A78BFA</span></div><div class="swatch"><span class="swatch__color" style="background:#22C55E"></span><span class="swatch__name">Aprobada</span><span class="swatch__hex">#22C55E</span></div><div class="swatch"><span class="swatch__color" style="background:#F59E0B"></span><span class="swatch__name">Revisión</span><span class="swatch__hex">#F59E0B</span></div><div class="swatch"><span class="swatch__color" style="background:#EF4444"></span><span class="swatch__name">Rechazada</span><span class="swatch__hex">#EF4444</span></div></div>
+  </section>
+
+  <p class="firma">FacturaBot · 7 facturas · CRC · USD · generado el 2026-10-19 20:41</p>
+</div>
+</body>
+</html>

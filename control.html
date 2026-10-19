@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FacturaBot · Master Suite POO en n8n & Panel de Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fondo: #070611;
+    --sup: rgba(18, 16, 36, 0.82);
+    --sup-solid: #121024;
+    --sup2: rgba(28, 24, 54, 0.88);
+    --sup3: #221D42;
+    --borde: rgba(139, 92, 246, 0.22);
+    --borde-light: rgba(255, 255, 255, 0.08);
+    --texto: #F3F4F6;
+    --suave: #9CA3AF;
+    --primario: #6366F1;
+    --primario2: #818CF8;
+    --fuchsia: #EC4899;
+    --fuchsia-light: #F472B6;
+    --teal: #06B6D4;
+    --teal-light: #22D3EE;
+    --violeta: #A855F7;
+    --violeta-light: #C084FC;
+    --ok: #10B981;
+    --ok-txt: #6EE7B7;
+    --ok-bg: rgba(16, 185, 129, 0.14);
+    --warn: #F59E0B;
+    --warn-txt: #FDE68A;
+    --warn-bg: rgba(245, 158, 11, 0.14);
+    --err: #F43F5E;
+    --err-txt: #FECDD3;
+    --err-bg: rgba(244, 63, 94, 0.14);
+    --radio: 18px;
+    --radio-sm: 10px;
+    --sombra: 0 24px 60px -20px rgba(0, 0, 0, 0.95), 0 0 40px -10px rgba(99, 102, 241, 0.15);
+    --sombra-card: 0 12px 32px -12px rgba(0, 0, 0, 0.8);
+    --glow-primario: 0 0 25px rgba(99, 102, 241, 0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 0% -5%, rgba(99, 102, 241, 0.22), transparent 60%),
+      radial-gradient(1000px 520px at 100% 0%, rgba(236, 72, 153, 0.16), transparent 55%),
+      radial-gradient(900px 600px at 50% 100%, rgba(6, 182, 212, 0.12), transparent 60%),
+      var(--fondo);
+    color: var(--texto);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    padding: 24px 20px 80px;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .logo, .tab-btn, .kpi__valor {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .hoja { max-width: 1240px; margin: 0 auto; }
+
+  /* CABECERA PRINCIPAL */
+  .cabecera {
+    display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;
+    background: linear-gradient(140deg, rgba(24, 20, 48, 0.94), rgba(15, 13, 31, 0.96));
+    border: 1px solid var(--borde); border-radius: var(--radio); padding: 24px 28px;
+    box-shadow: var(--sombra); position: relative; overflow: hidden;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  }
+  .cabecera::before {
+    content: ''; position: absolute; inset: 0 0 auto 0; height: 3.5px;
+    background: linear-gradient(90deg, var(--primario), var(--violeta), var(--fuchsia), var(--teal));
+  }
+  .marca { display: flex; align-items: center; gap: 18px; }
+  .logo {
+    width: 58px; height: 58px; flex: none; border-radius: 16px; display: grid; place-items: center;
+    font-weight: 900; font-size: 22px; color: #FFFFFF;
+    background: linear-gradient(135deg, var(--primario), var(--fuchsia), var(--teal));
+    box-shadow: 0 0 28px rgba(168, 85, 247, 0.55), 0 10px 22px -10px rgba(236, 72, 153, 0.6);
+  }
+  .marca__titulos h1 { font-size: 25px; font-weight: 800; letter-spacing: -.5px; background: linear-gradient(90deg, #FFFFFF, #E0E7FF); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .marca__titulos .sub { color: var(--suave); font-size: 13.5px; margin-top: 3px; }
+  .cabecera__badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge-tag {
+    font-size: 11.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
+    background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: var(--primario2);
+  }
+  .badge-tag.fuchsia {
+    background: rgba(236, 72, 153, 0.15); border-color: rgba(236, 72, 153, 0.35); color: var(--fuchsia-light);
+  }
+  .conexion {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--suave);
+    border: 1px solid var(--borde); background: rgba(10, 8, 20, 0.7); border-radius: 999px; padding: 7px 16px;
+  }
+  .punto { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 4px rgba(245, 158, 11, .15); }
+  .punto--on { background: var(--ok); box-shadow: 0 0 0 4px rgba(16, 185, 129, .22); }
+
+  /* NAVEGACIÓN POR PESTAÑAS (PILLS MODERNOS) */
+  .nav-tabs {
+    display: flex; gap: 10px; margin-top: 22px; overflow-x: auto; padding: 4px;
+    border-bottom: 1px solid var(--borde); scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: rgba(24, 20, 48, 0.5); border: 1px solid var(--borde-light); color: var(--suave);
+    font-size: 13.5px; font-weight: 600; padding: 11px 20px; border-radius: 14px 14px 0 0;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 9px; transition: all .25s ease;
+    white-space: nowrap; position: relative;
+  }
+  .tab-btn:hover { color: #FFFFFF; background: rgba(36, 30, 70, 0.7); border-color: var(--borde); }
+  .tab-btn.activo {
+    color: #FFFFFF; background: var(--sup); border: 1px solid var(--borde);
+    border-bottom-color: var(--sup-solid); border-top: 2.5px solid var(--fuchsia);
+    box-shadow: 0 -4px 16px -4px rgba(236, 72, 153, 0.25);
+  }
+  .tab-btn .badge-num {
+    font-size: 10.5px; padding: 2px 8px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08); color: var(--teal-light); border: 1px solid var(--borde);
+  }
+
+  /* PANELES Y CONTENEDORES */
+  .tab-content { display: none; animation: fadeIn .3s ease-in-out; }
+  .tab-content.activo { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .panel {
+    background: var(--sup); border: 1px solid var(--borde); border-radius: var(--radio);
+    padding: 26px 28px; margin-top: 20px; box-shadow: var(--sombra);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  }
+  .panel__cabecera {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    gap: 14px; margin-bottom: 22px; border-bottom: 1px solid rgba(139, 92, 246, 0.18); padding-bottom: 16px;
+  }
+  .panel__cabecera h2 {
+    font-size: 19px; font-weight: 700; display: flex; align-items: center; gap: 11px;
+    background: linear-gradient(90deg, #FFFFFF, #E2E8F0); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .panel__cabecera h2::before {
+    content: ''; width: 10px; height: 10px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--primario));
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+  }
+  .panel__desc { color: var(--suave); font-size: 13.5px; line-height: 1.6; }
+
+  /* KPIS */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 14px; margin: 20px 0; }
+  .kpi {
+    background: linear-gradient(160deg, var(--sup2), rgba(18, 16, 36, 0.95));
+    border: 1px solid var(--borde); border-radius: 16px; padding: 20px 18px;
+    box-shadow: var(--sombra-card); position: relative; overflow: hidden; transition: transform .2s ease, border-color .2s ease;
+  }
+  .kpi:hover { transform: translateY(-3px); border-color: rgba(168, 85, 247, 0.45); }
+  .kpi::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--acento, var(--primario)); box-shadow: 0 0 12px var(--acento, var(--primario)); }
+  .kpi__etiqueta { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); }
+  .kpi__valor { font-size: 29px; font-weight: 800; margin-top: 6px; letter-spacing: -.6px; font-variant-numeric: tabular-nums; }
+  .kpi__nota { font-size: 12px; color: var(--suave); margin-top: 4px; }
+
+  /* PIPELINE INTERACTIVO (DIAGRAMA DE NODOS) */
+  .pipeline-canvas {
+    display: flex; gap: 14px; align-items: stretch; overflow-x: auto; padding: 18px 4px 24px;
+    margin: 15px 0; scrollbar-width: thin;
+  }
+  .pipeline-node {
+    flex: 0 0 235px; background: var(--sup2); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 18px; position: relative; display: flex; flex-direction: column;
+    justify-content: space-between; transition: all .25s ease;
+  }
+  .pipeline-node:hover { border-color: var(--fuchsia); transform: translateY(-4px); box-shadow: 0 12px 28px -10px rgba(236, 72, 153, 0.4); }
+  .pipeline-node.nodo-activo { border-color: var(--teal); box-shadow: 0 0 20px rgba(6, 182, 212, 0.45); }
+  .pipeline-node__step { font-size: 10.5px; font-weight: 800; color: var(--teal-light); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+  .pipeline-node__title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+  .pipeline-node__type { font-size: 11.5px; color: var(--primario2); font-family: 'Fira Code', monospace; margin-bottom: 8px; }
+  .pipeline-node__detail { font-size: 12px; color: var(--suave); line-height: 1.45; }
+  .pipeline-node__output {
+    margin-top: 14px; padding: 8px 12px; background: rgba(7, 6, 17, 0.7); border: 1px solid var(--borde);
+    border-radius: 9px; font-size: 11px; font-family: 'Fira Code', monospace; color: var(--ok-txt);
+  }
+
+  /* BOTONES */
+  button {
+    font: inherit; font-size: 13px; font-weight: 600; border-radius: 11px; padding: 9px 18px;
+    cursor: pointer; border: 1px solid var(--borde); background: var(--sup2); color: var(--texto);
+    transition: all .2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  button:hover:not(:disabled) { transform: translateY(-1.5px); border-color: var(--primario); color: #fff; box-shadow: 0 6px 18px -4px rgba(99, 102, 241, 0.35); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.primario {
+    background: linear-gradient(135deg, var(--primario), var(--violeta)); border-color: transparent; color: #fff;
+    box-shadow: 0 8px 24px -8px rgba(99, 102, 241, 0.75);
+  }
+  button.teal {
+    background: linear-gradient(135deg, var(--teal), var(--primario)); border-color: transparent; color: #FFFFFF;
+    font-weight: 700; box-shadow: 0 8px 24px -8px rgba(6, 182, 212, 0.7);
+  }
+  button.fuchsia {
+    background: linear-gradient(135deg, var(--fuchsia), var(--violeta)); border-color: transparent; color: #FFFFFF;
+    font-weight: 700; box-shadow: 0 8px 24px -8px rgba(236, 72, 153, 0.7);
+  }
+  button.peligro { background: var(--err-bg); border-color: rgba(244, 63, 94, 0.4); color: var(--err-txt); }
+  button.peligro:hover { background: rgba(244, 63, 94, 0.25); border-color: var(--err); }
+  button.sm { font-size: 11.5px; padding: 7px 12px; border-radius: 9px; }
+
+  /* TABLAS DE FACTURAS */
+  .tabla-scroll { overflow-x: auto; border-radius: 14px; border: 1px solid var(--borde); margin-top: 15px; }
+  table { width: 100%; border-collapse: collapse; min-width: 860px; }
+  thead th {
+    background: rgba(28, 24, 54, 0.95); color: var(--suave); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase;
+    text-align: left; padding: 14px 16px; font-weight: 700; border-bottom: 1px solid var(--borde); white-space: nowrap;
+  }
+  tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(139, 92, 246, 0.12); vertical-align: middle; font-size: 13.5px; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { position: relative; transition: background .18s ease; }
+  tbody tr:hover { background: rgba(99, 102, 241, 0.08); }
+  tbody tr td:first-child { box-shadow: inset 4px 0 0 var(--fila, var(--primario)); }
+
+  .pill { display: inline-block; padding: 4px 13px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  .pill--aprobada { background: var(--ok-bg); color: var(--ok-txt); border: 1px solid rgba(16, 185, 129, 0.4); box-shadow: 0 0 10px rgba(16, 185, 129, 0.15); }
+  .pill--revision { background: var(--warn-bg); color: var(--warn-txt); border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 0 10px rgba(245, 158, 11, 0.15); }
+  .pill--rechazada { background: var(--err-bg); color: var(--err-txt); border: 1px solid rgba(244, 63, 94, 0.4); box-shadow: 0 0 10px rgba(244, 63, 94, 0.15); }
+
+  .tipo-tag {
+    display: inline-block; padding: 3px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700;
+    background: rgba(99, 102, 241, 0.15); color: #A5B4FC; border: 1px solid rgba(99, 102, 241, 0.35);
+  }
+  .tipo-tag--exenta { background: rgba(168, 85, 247, 0.15); color: #E9D5FF; border-color: rgba(168, 85, 247, 0.35); }
+  .tipo-tag--extranjera { background: rgba(6, 182, 212, 0.15); color: #A5F3FC; border-color: rgba(6, 182, 212, 0.35); }
+  .tipo-tag--credito { background: rgba(244, 63, 94, 0.15); color: #FECDD3; border-color: rgba(244, 63, 94, 0.35); }
+
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .total-cell { font-weight: 700; color: #fff; }
+  .barra-peso { height: 4.5px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); width: 100px; margin-top: 5px; overflow: hidden; }
+  .barra-peso span { display: block; height: 100%; border-radius: 999px; }
+
+  /* DISTRIBUCIÓN DE BARRAS */
+  .barra-dist { display: flex; height: 16px; border-radius: 999px; overflow: hidden; background: var(--sup2); border: 1px solid var(--borde); margin: 16px 0 12px; }
+  .seg { display: block; height: 100%; transition: width .3s ease; }
+  .leyenda { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; background: var(--sup2); border: 1px solid var(--borde);
+    border-radius: 999px; padding: 6px 15px; font-size: 12.5px; color: var(--suave);
+  }
+  .chip i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+  .chip b { color: var(--texto); font-variant-numeric: tabular-nums; }
+
+  /* VISOR Y COPIADOR DE CÓDIGO */
+  .codigo-contenedor {
+    background: #06050F; border: 1px solid var(--borde); border-radius: 14px; overflow: hidden; margin-top: 15px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  }
+  .codigo-barra {
+    display: flex; justify-content: space-between; align-items: center; background: rgba(28, 24, 54, 0.9);
+    padding: 12px 18px; border-bottom: 1px solid var(--borde);
+  }
+  .codigo-barra__titulo { font-size: 12.5px; font-weight: 600; color: var(--suave); font-family: 'Fira Code', monospace; }
+  pre.codigo-bloque {
+    padding: 20px; overflow-x: auto; font-family: 'Fira Code', monospace; font-size: 12.5px;
+    line-height: 1.68; color: #A5B4FC; max-height: 480px;
+  }
+
+  /* CARDS EDUCATIVAS DE POO */
+  .poo-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 18px; }
+  .poo-card {
+    background: linear-gradient(165deg, var(--sup2), rgba(18, 16, 36, 0.95)); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between;
+    transition: transform .2s ease, border-color .2s ease; position: relative; overflow: hidden;
+  }
+  .poo-card:hover { transform: translateY(-3px); border-color: var(--fuchsia); box-shadow: 0 12px 30px -10px rgba(236, 72, 153, 0.25); }
+  .poo-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-color, var(--primario)); box-shadow: 0 0 12px var(--card-color, var(--primario)); }
+  .poo-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .poo-card__pilar { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--card-color, var(--primario)); }
+  .poo-card__title { font-size: 17px; font-weight: 700; margin: 4px 0 8px; color: #fff; }
+  .poo-card__desc { font-size: 13px; color: var(--suave); line-height: 1.55; margin-bottom: 14px; }
+  .poo-card__snippet {
+    background: #06050F; border: 1px solid var(--borde); border-radius: 10px; padding: 14px;
+    font-family: 'Fira Code', monospace; font-size: 11.5px; color: #38BDF8; margin-bottom: 14px;
+    white-space: pre-wrap; line-height: 1.5;
+  }
+  .poo-card__benefit {
+    font-size: 12px; padding: 9px 14px; border-radius: 9px; background: rgba(6, 182, 212, 0.09);
+    border-left: 3.5px solid var(--teal); color: #E0F2FE;
+  }
+
+  /* LABORATORIO / TESTER INTERACTIVO */
+  .lab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 15px; }
+  @media (max-width: 900px) { .lab-grid { grid-template-columns: 1fr; } }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--suave); margin-bottom: 6px; }
+  .form-control {
+    width: 100%; background: rgba(7, 6, 17, 0.85); border: 1px solid var(--borde); border-radius: 10px;
+    padding: 11px 14px; color: var(--texto); font-size: 13px; outline: none; transition: border-color .2s ease, box-shadow .2s ease;
+    font-family: inherit;
+  }
+  .form-control:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* CONSOLA & SERVICIOS */
+  .servicios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 15px; }
+  .servicio-item {
+    background: linear-gradient(160deg, var(--sup2), rgba(18, 16, 36, 0.95)); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .consola {
+    background: #06050F; border: 1px solid var(--borde); border-radius: 14px; padding: 18px;
+    max-height: 320px; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 12px;
+    line-height: 1.68; color: #A5B4FC; white-space: pre-wrap; margin-top: 15px;
+  }
+  .consola .ok { color: var(--ok-txt); }
+  .consola .err { color: var(--err-txt); }
+  .consola .info { color: var(--teal-light); }
+
+  /* TEST RUNNER INTERACTIVO */
+  .test-suite { margin-top: 15px; }
+  .test-item {
+    display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-bottom: 1px solid rgba(139, 92, 246, 0.12);
+    font-size: 13px; transition: background .15s ease;
+  }
+  .test-item:hover { background: rgba(99, 102, 241, 0.08); }
+  .test-item__icon { flex: none; font-size: 15px; margin-top: 1px; }
+  .test-item__name { font-weight: 700; color: #fff; }
+  .test-item__desc { font-size: 12px; color: var(--suave); margin-top: 2px; }
+
+  /* MODAL REPORT PREVIEW */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(4, 3, 10, 0.88); backdrop-filter: blur(12px);
+    display: none; place-items: center; z-index: 1000; padding: 20px;
+  }
+  .modal-overlay.activo { display: grid; }
+  .modal-container {
+    background: var(--sup-solid); border: 1px solid var(--borde); border-radius: var(--radio);
+    width: 100%; max-width: 1100px; max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,.95), 0 0 50px rgba(139, 92, 246, 0.25); overflow: hidden;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center; padding: 18px 24px;
+    border-bottom: 1px solid var(--borde); background: var(--sup2);
+  }
+  .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .reporte-frame { width: 100%; height: 600px; border: none; border-radius: 12px; background: var(--fondo); }
+
+  @media (max-width: 640px) {
+    body { padding: 16px 10px 40px; }
+    .cabecera { padding: 18px; }
+    .kpi__valor { font-size: 24px; }
+    .tab-btn { padding: 9px 14px; font-size: 12.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <!-- CABECERA PRINCIPAL -->
+  <header class="cabecera">
+    <div class="marca">
+      <div class="logo">FB</div>
+      <div class="marca__titulos">
+        <h1>FacturaBot · Master Suite POO en n8n</h1>
+        <p class="sub">Arquitectura de Software Orientada a Objetos en nodos Code de n8n · Workflow de 9 nodos</p>
+      </div>
+    </div>
+    <div class="cabecera__badges">
+      <span class="badge-tag">JavaScript ES2022+</span>
+      <span class="badge-tag fuchsia">Nebula Aurora Luxe UI</span>
+      <span class="conexion"><span class="punto" id="punto"></span><span id="estadoApi">Conectando API…</span></span>
+  </header>
+
+  <!-- BARRA DE PESTAÑAS -->
+  <nav class="nav-tabs" id="navTabs">
+    <button class="tab-btn activo" data-tab="simulador">⚡ Pipeline n8n en Vivo <span class="badge-num">9 nodos</span></button>
+    <button class="tab-btn" data-tab="arquitectura">🏛️ 4 Pilares POO & Factory <span class="badge-num">Cátedra</span></button>
+    <button class="tab-btn" data-tab="laboratorio">🧪 Tester Interactivo <span class="badge-num">Playground</span></button>
+    <button class="tab-btn" data-tab="codigo">📋 Nodos & Workflow.json <span class="badge-num">Copy-Paste</span></button>
+    <button class="tab-btn" data-tab="pruebas">🛡️ Suite de Verificación <span class="badge-num">Unit Tests</span></button>
+    <button class="tab-btn" data-tab="servicios">🖥️ Servidores & Puertos <span class="badge-num">Infra</span></button>
+  </nav>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 1: SIMULADOR Y PIPELINE N8N EN VIVO -->
+  <!-- ===================================================================== -->
+  <section class="tab-content activo" id="tab-simulador">
+    <div class="panel">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Pipeline Automatizado en n8n · 9 Nodos / 8 Pasos</h2>
+          <p class="panel__desc">Visualiza y simula el flujo completo de datos a través de los nodos Code, Switch, Sets y Merge.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="teal" id="btnEjecutarSimulacion">▶ Ejecutar Pipeline Completo</button>
+          <button id="btnVerReporteModal">👁️ Ver Reporte Midnight Ledger</button>
+        </div>
+      </div>
+
+      <!-- DIAGRAMA VISUAL DE LOS 9 NODOS -->
+      <div class="pipeline-canvas" id="pipelineCanvas">
+        <div class="pipeline-node" id="pnode-1">
+          <div>
+            <div class="pipeline-node__step">Nodo 1 · Paso 1</div>
+            <div class="pipeline-node__title">Manual Trigger <span>⚡</span></div>
+            <div class="pipeline-node__type">manualTrigger</div>
+            <div class="pipeline-node__detail">Dispara manualmente la ejecución del flujo en n8n.</div>
+          </div>
+          <div class="pipeline-node__output">Entrada: 1 disparo</div>
+        </div>
+
+        <div class="pipeline-node" id="pnode-2">
+          <div>
+            <div class="pipeline-node__step">Nodo 2 · Paso 2</div>
+            <div class="pipeline-node__title">Datos de prueba <span>📦</span></div>
+            <div class="pipeline-node__type">code (runOnceForAllItems)</div>
+            <div class="pipeline-node__detail">Inyecta el lote de 7 facturas en formato nativo <code>[{ json }]</code>.</div>
+          </div>
+          <div class="pipeline-node__output">Salida: 7 ítems raw</div>
+        </div>
+
+        <div class="pipeline-node" id="pnode-3">
+          <div>
+            <div class="pipeline-node__step">Nodo 3 · Paso 3</div>
+            <div class="pipeline-node__title">Procesar facturas <span>🧠</span></div>
+            <div class="pipeline-node__type">code (runOnceForAllItems)</div>
+            <div class="pipeline-node__detail">Aplica Factory, 4 Pilares POO y Validador. Asigna campo <code>estado</code>.</div>
+          </div>
+          <div class="pipeline-node__output">Salida: 7 facturas normalizadas</div>
+        </div>
+
+        <div class="pipeline-node" id="pnode-4">
+          <div>
+            <div class="pipeline-node__step">Nodo 4 · Paso 4</div>
+            <div class="pipeline-node__title">Clasificar <span>🔀</span></div>
+            <div class="pipeline-node__type">switch (3 salidas)</div>
+            <div class="pipeline-node__detail">Evalúa <code>{{ $json.estado }}</code> y enruta a las 3 ramas de negocio.</div>
+          </div>
+          <div class="pipeline-node__output">3 rutas: aprobada, revision, rechazada</div>
+        </div>
+
+        <div class="pipeline-node" id="pnode-5">
+          <div>
+            <div class="pipeline-node__step">Nodos 5, 6, 7 · Pasos 5, 6, 7</div>
+            <div class="pipeline-node__title">Sets de Acción <span>🏷️</span></div>
+            <div class="pipeline-node__type">set (includeOtherFields: true)</div>
+            <div class="pipeline-node__detail">Asignan <code>accion</code> contable, gerencial o de devolución.</div>
+          </div>
+          <div class="pipeline-node__output">Agregan campo accion</div>
+        </div>
+
+        <div class="pipeline-node" id="pnode-8">
+          <div>
+            <div class="pipeline-node__step">Nodo 8 · Paso 8</div>
+            <div class="pipeline-node__title">Unificar lote <span>🔗</span></div>
+            <div class="pipeline-node__type">merge (append, 3 entradas)</div>
+            <div class="pipeline-node__detail">Reúne las 3 ramas en un único flujo unificado.</div>
+          </div>
+          <div class="pipeline-node__output">Salida: 7 facturas unificadas</div>
+        </div>
+
+        <div class="pipeline-node" id="pnode-9">
+          <div>
+            <div class="pipeline-node__step">Nodo 9 · Paso 8b</div>
+            <div class="pipeline-node__title">Reporte del lote <span>📊</span></div>
+            <div class="pipeline-node__type">code (runOnceForAllItems)</div>
+            <div class="pipeline-node__detail">Instancia <code>ReporteLote</code>, totaliza sin rechazadas, genera HTML y Base64.</div>
+          </div>
+          <div class="pipeline-node__output">Salida: 1 ítem + binario HTML</div>
+        </div>
+      </div>
+
+      <!-- KPIS CONSOLIDADOS DEL LOTE -->
+      <div class="kpis">
+        <div class="kpi" style="--acento:var(--primario)">
+          <span class="kpi__etiqueta">Facturas Lote</span>
+          <span class="kpi__valor" id="kpi-total">7</span>
+          <span class="kpi__nota">100% procesadas</span>
+        </div>
+        <div class="kpi" style="--acento:var(--ok)">
+          <span class="kpi__etiqueta">Aprobadas</span>
+          <span class="kpi__valor" id="kpi-aprobadas" style="color:var(--ok-txt)">4</span>
+          <span class="kpi__nota">Registrar en contabilidad</span>
+        </div>
+        <div class="kpi" style="--acento:var(--warn)">
+          <span class="kpi__etiqueta">En Revisión</span>
+          <span class="kpi__valor" id="kpi-revision" style="color:var(--warn-txt)">1</span>
+          <span class="kpi__nota">Enviar a gerencia</span>
+        </div>
+        <div class="kpi" style="--acento:var(--err)">
+          <span class="kpi__etiqueta">Rechazadas</span>
+          <span class="kpi__valor" id="kpi-rechazadas" style="color:var(--err-txt)">2</span>
+          <span class="kpi__nota">Devolver al proveedor</span>
+        </div>
+        <div class="kpi" style="--acento:var(--teal)">
+          <span class="kpi__etiqueta">Total a Registrar</span>
+          <span class="kpi__valor" id="kpi-monto-total" style="color:var(--teal)">₡2,622,800</span>
+          <span class="kpi__nota">Excluye facturas rechazadas</span>
+        </div>
+        <div class="kpi" style="--acento:var(--violeta)">
+          <span class="kpi__etiqueta">IVA Acumulado</span>
+          <span class="kpi__valor" id="kpi-monto-iva" style="color:var(--violeta)">₡137,800</span>
+          <span class="kpi__nota" id="kpi-tasa-efectiva">Tasa efectiva 5.55%</span>
+        </div>
+      </div>
+
+      <!-- DISTRIBUCIÓN -->
+      <div class="barra-dist" id="barraDistribucion">
+        <span class="seg" style="width:57.14%;background:var(--ok)" title="Aprobadas: 4 (57.1%)"></span>
+        <span class="seg" style="width:14.29%;background:var(--warn)" title="En revisión: 1 (14.3%)"></span>
+        <span class="seg" style="width:28.57%;background:var(--err)" title="Rechazadas: 2 (28.6%)"></span>
+      </div>
+      <div class="leyenda">
+        <span class="chip"><i style="background:var(--ok)"></i>Aprobadas: <b>4 (57.1%)</b></span>
+        <span class="chip"><i style="background:var(--warn)"></i>En revisión: <b>1 (14.3%)</b></span>
+        <span class="chip"><i style="background:var(--err)"></i>Rechazadas: <b>2 (28.6%)</b></span>
+        <span class="chip"><i style="background:var(--err)"></i>Dinero en disputa rechazado: <b style="color:var(--err-txt)">₡15,000</b> (No entra en contabilidad)</span>
+      </div>
+
+      <!-- TABLA DETALLE DE FACTURAS -->
+      <div class="panel__cabecera" style="margin-top:25px;margin-bottom:0">
+        <h3>Detalle del Lote de Facturas en n8n</h3>
+        <span style="font-size:12.5px;color:var(--suave)">Haz clic en cualquier factura para auditar su despacho polimórfico</span>
+      </div>
+      <div class="tabla-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Factura</th>
+              <th>Tipo</th>
+              <th>Proveedor & Cédula</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Subtotal</th>
+              <th>IVA (Polimórfico)</th>
+              <th>Total en ₡</th>
+              <th>Acción Asignada (Set)</th>
+            </tr>
+          </thead>
+          <tbody id="tablaFacturasBody">
+            <!-- Renderizado dinámico -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 2: ARQUITECTURA POO Y CÁTEDRA DEL PROFESOR -->
+  <!-- ===================================================================== -->
+  <section class="tab-content" id="tab-arquitectura">
+    <div class="panel">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Cátedra de Arquitectura: Los 4 Pilares de POO en el nodo Code</h2>
+          <p class="panel__desc">Guía técnica y análisis arquitectónico dictado por el Arquitecto de Software Senior y Profesor de Programación.</p>
+        </div>
+        <button class="primario sm" id="btnEjecutarCheckPOO">Auditar Restricciones POO</button>
+      </div>
+
+      <!-- CARDS DE LOS 4 PILARES + PATRÓN FACTORY -->
+      <div class="poo-cards">
+        <!-- PILAR 1 -->
+        <div class="poo-card" style="--card-color:var(--primario)">
+          <div>
+            <div class="poo-card__header">
+              <span class="poo-card__pilar">Pilar 1</span>
+              <span class="badge-tag">ES2022 Private</span>
+            </div>
+            <div class="poo-card__title">Encapsulamiento Robusto</div>
+            <p class="poo-card__desc">Los estados internos se resguardan mediante campos privados (#) inaccesibles desde el exterior. El acceso se controla mediante <b>getters</b> puros y las colecciones retornan clones congelados con <code>Object.freeze()</code>.</p>
+            <div class="poo-card__snippet">class Factura {
+  #lineas; #numero; #proveedor;
+  constructor(datos) {
+    this.#lineas = Object.freeze(
+      datos.lineas.map(l => new LineaFactura(l))
+    );
+  }
+  get lineas() { return this.#lineas; }
+}</div>
+          </div>
+          <div class="poo-card__benefit">
+            <b>Garantía arquitectónica:</b> Ningún nodo o script externo puede corromper el detalle de líneas ni las cantidades de una factura.
+          </div>
+        </div>
+
+        <!-- PILAR 2 -->
+        <div class="poo-card" style="--card-color:var(--violeta)">
+          <div>
+            <div class="poo-card__header">
+              <span class="poo-card__pilar">Pilar 2</span>
+              <span class="badge-tag">Extends & Super</span>
+            </div>
+            <div class="poo-card__title">Herencia Especializada</div>
+            <p class="poo-card__desc">Reutilización de lógica de cabecera y detalle. Las subclases heredan de <code>Factura</code> delegando la construcción base mediante <code>super(datos)</code> y agregando estado especializado (#motivoExencion, #moneda, #tipoCambio).</p>
+            <div class="poo-card__snippet">class FacturaExtranjera extends Factura {
+  #moneda; #tipoCambio;
+  constructor(datos) {
+    super(datos);
+    this.#moneda = datos.moneda;
+    this.#tipoCambio = datos.tipoCambio;
+  }
+}</div>
+          </div>
+          <div class="poo-card__benefit">
+            <b>Garantía arquitectónica:</b> Cero duplicación de código en cálculo de líneas, números y metadatos comunes.
+          </div>
+        </div>
+
+        <!-- PILAR 3 -->
+        <div class="poo-card" style="--card-color:var(--teal)">
+          <div>
+            <div class="poo-card__header">
+              <span class="poo-card__pilar">Pilar 3</span>
+              <span class="badge-tag">Dynamic Dispatch</span>
+            </div>
+            <div class="poo-card__title">Polimorfismo (Sin IF para IVA)</div>
+            <p class="poo-card__desc"><b>RESTRICCIÓN CUMPLIDA:</b> Queda prohibido usar <code>if (tipo === '...')</code>. El cálculo del IVA y del total se resuelve por sobrescritura de métodos. El runtime de JS despacha al método de la instancia concreta.</p>
+            <div class="poo-card__snippet">// En FacturaNacional:
+calcularImpuesto() { return this.subtotal() * 0.13; }
+
+// En FacturaExenta y FacturaExtranjera:
+calcularImpuesto() { return 0; }
+
+// En FacturaExtranjera:
+total() { return this.subtotalColones() + this.calcularImpuesto(); }</div>
+          </div>
+          <div class="poo-card__benefit">
+            <b>Garantía arquitectónica:</b> Cumple el principio Open/Closed (OCP). Agregar un nuevo tipo no toca el código de cálculo existente.
+          </div>
+        </div>
+
+        <!-- PILAR 4 -->
+        <div class="poo-card" style="--card-color:var(--warn)">
+          <div>
+            <div class="poo-card__header">
+              <span class="poo-card__pilar">Pilar 4</span>
+              <span class="badge-tag">Abstract Class</span>
+            </div>
+            <div class="poo-card__title">Abstracción Estricta</div>
+            <p class="poo-card__desc"><code>Factura</code> define el contrato abstracto pero no puede instanciarse directamente. El constructor evalúa <code>new.target === Factura</code> lanzando <code>TypeError</code>, y <code>calcularImpuesto()</code> lanza <code>Error</code> si no es sobrescrito.</p>
+            <div class="poo-card__snippet">class Factura {
+  constructor(datos) {
+    if (new.target === Factura) {
+      throw new TypeError("Factura es abstracta.");
+    }
+  }
+  calcularImpuesto() {
+    throw new Error("Método abstracto.");
+  }
+}</div>
+          </div>
+          <div class="poo-card__benefit">
+            <b>Garantía arquitectónica:</b> Impide la existencia de facturas genéricas sin política fiscal definida.
+          </div>
+        </div>
+
+        <!-- PATRÓN FACTORY -->
+        <div class="poo-card" style="--card-color:var(--ok)">
+          <div>
+            <div class="poo-card__header">
+              <span class="poo-card__pilar">Design Pattern</span>
+              <span class="badge-tag">Registry Factory</span>
+            </div>
+            <div class="poo-card__title">Fábrica de Facturas (FabricaFacturas)</div>
+            <p class="poo-card__desc">Implementa un registro tipo → clase en memoria privada. En lugar de un <code>switch/if</code> procedural, la fábrica despacha la instanciación en tiempo constante <i>O(1)</i> y lanza <code>ErrorFactura</code> ante tipos no soportados.</p>
+            <div class="poo-card__snippet">class FabricaFacturas {
+  static #registro = {
+    nacional: FacturaNacional,
+    exenta: FacturaExenta,
+    extranjera: FacturaExtranjera,
+  };
+  static crear(datos) {
+    const C = FabricaFacturas.#registro[datos?.tipo];
+    if (!C) throw new ErrorFactura("Tipo no soportado");
+    return new C(datos);
+  }
+}</div>
+          </div>
+          <div class="poo-card__benefit">
+            <b>Garantía arquitectónica:</b> Extensible en una sola línea mediante <code>FabricaFacturas.registrar('nuevo', Clase)</code>.
+          </div>
+        </div>
+
+        <!-- VALIDADOR DE NEGOCIO -->
+        <div class="poo-card" style="--card-color:#F43F5E">
+          <div>
+            <div class="poo-card__header">
+              <span class="poo-card__pilar">Reglas de Negocio</span>
+              <span class="badge-tag">Regex & Severidad</span>
+            </div>
+            <div class="poo-card__title">ValidadorFactura (Cédula CR & Fechas)</div>
+            <p class="poo-card__desc">Valida cédula costarricense con <code>/^3-\d{3}-\d{6}$/</code>, campos obligatorios, cantidades/precios > 0. Clasifica los hallazgos en dos severidades:</p>
+            <div class="poo-card__snippet">if (!datos.numero || !regex.test(cedula)) {
+  errores.push(...); // -> estado = 'rechazada'
+}
+if (new Date(datos.fecha) > Date.now()) {
+  advertencias.push(...); // -> estado = 'revision'
+}
+// Sin observaciones      // -> estado = 'aprobada'</div>
+          </div>
+          <div class="poo-card__benefit">
+            <b>Garantía arquitectónica:</b> Desacopla la validación de la instanciación permitiendo reportar dinero en disputa.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 3: LABORATORIO / TESTER INTERACTIVO DE FACTURAS -->
+  <!-- ===================================================================== -->
+  <section class="tab-content" id="tab-laboratorio">
+    <div class="panel">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Laboratorio y Evaluador de Facturas en Vivo</h2>
+          <p class="panel__desc">Prueba en caliente cómo reaccionan las clases POO, la Fábrica y el Validador con cualquier dato de factura.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="sm" onclick="cargarPreset('F-001')">Preset F-001 (Nacional)</button>
+          <button class="sm" onclick="cargarPreset('F-002')">Preset F-002 (Exenta)</button>
+          <button class="sm" onclick="cargarPreset('F-003')">Preset F-003 (USD Extranjera)</button>
+          <button class="sm" onclick="cargarPreset('F-004')">Preset F-004 (Cédula Mala)</button>
+          <button class="sm" onclick="cargarPreset('F-006')">Preset F-006 (Tipo Inválido)</button>
+          <button class="sm" onclick="cargarPreset('F-007')">Preset F-007 (Fecha Futura)</button>
+        </div>
+      </div>
+
+      <div class="lab-grid">
+        <!-- FORMULARIO -->
+        <div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Número de Factura</label>
+              <input type="text" id="labNumero" class="form-control" value="F-999">
+            </div>
+            <div class="form-group">
+              <label>Tipo Documental</label>
+              <select id="labTipo" class="form-control" onchange="toggleCamposTipo()">
+                <option value="nacional">nacional (IVA 13%)</option>
+                <option value="exenta">exenta (IVA 0% + motivo)</option>
+                <option value="extranjera">extranjera (Moneda + TC a ₡)</option>
+                <option value="credito">credito (No soportado)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Proveedor</label>
+              <input type="text" id="labProveedor" class="form-control" value="Servicios Tecnológicos CR">
+            </div>
+            <div class="form-group">
+              <label>Cédula Jurídica (3-XXX-XXXXXX)</label>
+              <input type="text" id="labCedula" class="form-control" value="3-101-555666">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fecha de Emisión</label>
+              <input type="date" id="labFecha" class="form-control" value="2026-09-15">
+            </div>
+            <div class="form-group" id="grupoExenta" style="display:none">
+              <label>Motivo de Exención</label>
+              <input type="text" id="labMotivo" class="form-control" value="Exportación de software">
+            </div>
+            <div class="form-group" id="grupoExtranjera" style="display:none">
+              <label>Moneda / Tipo de Cambio</label>
+              <div style="display:flex;gap:6px">
+                <input type="text" id="labMoneda" class="form-control" style="width:70px" value="USD">
+                <input type="number" id="labTipoCambio" class="form-control" value="510">
+              </div>
+            </div>
+          </div>
+
+          <!-- LÍNEAS DE DETALLE -->
+          <div style="margin-top:10px">
+            <label style="font-size:12px;font-weight:600;color:var(--suave);display:block;margin-bottom:6px">Línea de Factura</label>
+            <div class="form-row">
+              <input type="text" id="labDescLinea" class="form-control" placeholder="Descripción" value="Consultoría en Arquitectura Cloud">
+              <div style="display:flex;gap:6px">
+                <input type="number" id="labCantLinea" class="form-control" placeholder="Cant." value="5" style="width:70px">
+                <input type="number" id="labPrecioLinea" class="form-control" placeholder="Precio U." value="45000">
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px;display:flex;gap:10px">
+            <button class="teal" id="btnEvaluarLab">🧪 Evaluar con Motor POO</button>
+            <button id="btnLimpiarLab">Limpiar</button>
+          </div>
+        </div>
+
+        <!-- RESULTADOS EN TIEMPO REAL -->
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--suave);display:block;margin-bottom:8px">Auditoría del Motor de POO & Validación</label>
+          <div id="labResultado" style="background:#050811;border:1px solid var(--borde);border-radius:12px;padding:18px;min-height:300px;font-family:'Fira Code',monospace;font-size:12px;line-height:1.6;color:#9FB3D1">
+            Esperando evaluación... Haz clic en "Evaluar con Motor POO" o carga un preset arriba.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 4: CÓDIGO DE LOS NODOS PARA N8N & WORKFLOW.JSON -->
+  <!-- ===================================================================== -->
+  <section class="tab-content" id="tab-codigo">
+    <div class="panel">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Código Listo para Copiar y Pegar en n8n</h2>
+          <p class="panel__desc">Archivos generados en producción listos para los nodos Code (Run Once for All Items) e importación de workflow.json.</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="primario" id="btnDescargarWorkflow">📥 Descargar workflow.json</button>
+          <button id="btnCopiarWorkflow">📋 Copiar workflow.json</button>
+        </div>
+      </div>
+
+      <!-- SELECTOR DE NODO -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="sm activo" id="btnVerNodo2" onclick="mostrarCodigoNodo(2)">Nodo 2: Datos de prueba</button>
+        <button class="sm" id="btnVerNodo3" onclick="mostrarCodigoNodo(3)">Nodo 3: Procesar facturas (POO + Factory)</button>
+        <button class="sm" id="btnVerNodo9" onclick="mostrarCodigoNodo(9)">Nodo 9: Reporte del lote (ReporteLote)</button>
+        <button class="sm" id="btnVerWorkflowNodos" onclick="mostrarCodigoNodo('wf')">Arquitectura de Conexiones (Switch + Sets + Merge)</button>
+      </div>
+
+      <div class="codigo-contenedor">
+        <div class="codigo-barra">
+          <span class="codigo-barra__titulo" id="codigoBarraTitulo">nodes/03-procesar-facturas.js · 19 KB</span>
+          <button class="sm" id="btnCopiarCodigoNodo">📋 Copiar Código del Nodo</button>
+        </div>
+        <pre class="codigo-bloque" id="codigoBloque">Cargando código fuente...</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 5: SUITE DE VERIFICACIÓN DE TESTS -->
+  <!-- ===================================================================== -->
+  <section class="tab-content" id="tab-pruebas">
+    <div class="panel">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Suite de Verificación y Pruebas Unitarias Integrada</h2>
+          <p class="panel__desc">Ejecuta las pruebas automáticas del dominio, los 4 pilares de POO, la Fábrica, el Validador y la arquitectura del Workflow.</p>
+        </div>
+        <button class="teal" id="btnCorrerPruebasNavegador">▶ Ejecutar Verificación Completa</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:15px;margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700">Resultado: <span id="testSummaryBadge" style="color:var(--ok-txt)">56/56 Pruebas Superadas</span></div>
+        <div style="flex:1;height:8px;background:var(--sup2);border-radius:999px;overflow:hidden;border:1px solid var(--borde)">
+          <div id="testProgressBar" style="width:100%;height:100%;background:linear-gradient(90deg,var(--primario),var(--teal))"></div>
+        </div>
+      </div>
+
+      <div class="test-suite" id="testSuiteList">
+        <!-- Generado dinámicamente -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- TAB 6: SERVIDORES, PUERTOS & CONSOLA -->
+  <!-- ===================================================================== -->
+  <section class="tab-content" id="tab-servicios">
+    <div class="panel">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Infraestructura Local · Servicios y Puertos</h2>
+          <p class="panel__desc">Levanta y detén los servidores de desarrollo, n8n aislado y libera puertos en conflicto.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="primario sm" id="btnTodos">Iniciar todo</button>
+          <button class="sm" id="btnDetenerTodos">Detener todo</button>
+          <button class="peligro sm" id="btnLiberar">Liberar puertos 8080 · 5679 · 5678</button>
+          <a class="enlace-reporte" id="linkReporte" href="#" target="_blank" style="font-size:12.5px;color:var(--teal)">Abrir reporte estático →</a>
+        </div>
+      </div>
+
+      <div class="servicios-grid" id="servicios"></div>
+
+      <div class="panel__cabecera" style="margin-top:25px;margin-bottom:0">
+        <h3>Consola de Procesos en Tiempo Real</h3>
+        <button class="sm" onclick="lineas.length=0;consola.innerHTML='Consola limpia';">Limpiar consola</button>
+      </div>
+      <div class="consola" id="consola">Esperando acciones del controlador...</div>
+    </div>
+  </section>
+
+</div>
+
+<!-- MODAL PREVIEW DEL REPORTE -->
+<div class="modal-overlay" id="modalReporte">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 style="font-size:16px;font-weight:700">Vista Previa · Reporte del Lote (Paleta Midnight Ledger)</h3>
+      <button class="sm" id="btnCerrarModal">✕ Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <iframe class="reporte-frame" id="iframeReporte" src="about:blank"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- MOTOR DE POO, CAPA DE DOMINIO, WORKFLOW Y SIMULACIÓN EN CLIENTE -->
+<!-- ======================================================================= -->
+<script>
+/* ---------------------------------------------------------------------------
+ * 1. CAPA DE DOMINIO: LOS 4 PILARES DE POO
+ * ------------------------------------------------------------------------ */
+class ErrorFactura extends Error {
+  constructor(mensaje, codigo = 'FACTURA_INVALIDA') {
+    super(mensaje);
+    this.name = 'ErrorFactura';
+    this.codigo = codigo;
+  }
+}
+
+// Pilar 1: Encapsulamiento
+class LineaFactura {
+  #descripcion;
+  #cantidad;
+  #precioUnitario;
+
+  constructor({ descripcion, cantidad, precioUnitario }) {
+    if (typeof descripcion !== 'string' || descripcion.trim() === '') {
+      throw new ErrorFactura('La descripción de la línea es obligatoria.', 'LINEA_SIN_DESCRIPCION');
+    }
+    if (!Number.isFinite(Number(cantidad)) || Number(cantidad) <= 0) {
+      throw new ErrorFactura(`La cantidad de "${descripcion.trim()}" debe ser mayor que 0.`, 'CANTIDAD_INVALIDA');
+    }
+    if (!Number.isFinite(Number(precioUnitario)) || Number(precioUnitario) <= 0) {
+      throw new ErrorFactura(`El precio unitario de "${descripcion.trim()}" debe ser mayor que 0.`, 'PRECIO_INVALIDO');
+    }
+    this.#descripcion = descripcion.trim();
+    this.#cantidad = Number(cantidad);
+    this.#precioUnitario = Number(precioUnitario);
+  }
+
+  get descripcion() { return this.#descripcion; }
+  get cantidad() { return this.#cantidad; }
+  get precioUnitario() { return this.#precioUnitario; }
+
+  subtotal() {
+    return this.#cantidad * this.#precioUnitario;
+  }
+
+  toJSON() {
+    return {
+      descripcion: this.#descripcion,
+      cantidad: this.#cantidad,
+      precioUnitario: this.#precioUnitario,
+      subtotal: this.subtotal(),
+    };
+  }
+
+  static subtotalDe(lineas = []) {
+    if (!Array.isArray(lineas)) return 0;
+    return lineas.reduce((acumulado, linea) => {
+      const cantidad = Number(linea?.cantidad);
+      const precio = Number(linea?.precioUnitario);
+      if (!Number.isFinite(cantidad) || !Number.isFinite(precio)) return acumulado;
+      if (cantidad <= 0 || precio <= 0) return acumulado;
+      return acumulado + cantidad * precio;
+    }, 0);
+  }
+}
+
+// Pilar 4: Abstracción (Base Abstracta) + Pilar 1: Encapsulamiento
+class Factura {
+  #numero;
+  #proveedor;
+  #cedulaJuridica;
+  #fecha;
+  #lineas;
+
+  constructor({ numero, proveedor, cedulaJuridica, fecha, lineas = [] }) {
+    if (new.target === Factura) {
+      throw new TypeError('Factura es una clase abstracta: use FabricaFacturas.crear() o una subclase.');
+    }
+    this.#numero = numero ?? null;
+    this.#proveedor = proveedor ?? null;
+    this.#cedulaJuridica = cedulaJuridica ?? null;
+    this.#fecha = fecha instanceof Date ? fecha : new Date(fecha);
+
+    this.#lineas = Object.freeze(
+      (Array.isArray(lineas) ? lineas : []).map((linea) =>
+        linea instanceof LineaFactura ? linea : new LineaFactura(linea)
+      )
+    );
+  }
+
+  get lineas() { return this.#lineas; }
+  get numero() { return this.#numero; }
+  get proveedor() { return this.#proveedor; }
+  get cedulaJuridica() { return this.#cedulaJuridica; }
+  get fecha() {
+    return Number.isNaN(this.#fecha.getTime()) ? null : this.#fecha.toISOString().slice(0, 10);
+  }
+  get tipo() { return 'base'; }
+  get tasaImpuesto() { return 0; }
+
+  subtotal() {
+    return this.#lineas.reduce((acumulado, linea) => acumulado + linea.subtotal(), 0);
+  }
+
+  subtotalColones() {
+    return this.subtotal();
+  }
+
+  // Método abstracto
+  calcularImpuesto() {
+    throw new Error('calcularImpuesto() es un método abstracto: debe implementarse en la subclase.');
+  }
+
+  total() {
+    return this.subtotalColones() + this.calcularImpuesto();
+  }
+
+  toJSON() {
+    return {
+      numero: this.#numero,
+      tipo: this.tipo,
+      proveedor: this.#proveedor,
+      cedulaJuridica: this.#cedulaJuridica,
+      fecha: this.fecha,
+      lineas: this.#lineas.map((linea) => linea.toJSON()),
+      subtotal: this.subtotalColones(),
+      impuesto: this.calcularImpuesto(),
+      total: this.total(),
+      moneda: 'CRC',
+    };
+  }
+}
+
+// Pilar 2: Herencia + Pilar 3: Polimorfismo (Nacional IVA 13%)
+class FacturaNacional extends Factura {
+  static TASA_IVA = 0.13;
+  constructor(datos) { super(datos); }
+  get tipo() { return 'nacional'; }
+  get tasaImpuesto() { return FacturaNacional.TASA_IVA; }
+
+  calcularImpuesto() {
+    return Math.round(this.subtotal() * this.tasaImpuesto);
+  }
+}
+
+// Pilar 2: Herencia + Pilar 3: Polimorfismo (Exenta IVA 0%)
+class FacturaExenta extends Factura {
+  #motivoExencion;
+  constructor(datos) {
+    super(datos);
+    this.#motivoExencion = String(datos?.motivoExencion ?? '').trim();
+  }
+  get motivoExencion() { return this.#motivoExencion; }
+  get tipo() { return 'exenta'; }
+  get tasaImpuesto() { return 0; }
+
+  calcularImpuesto() { return 0; }
+}
+
+// Pilar 2: Herencia + Pilar 3: Polimorfismo (Extranjera IVA 0% y total convertido a Colones)
+class FacturaExtranjera extends Factura {
+  #moneda;
+  #tipoCambio;
+
+  constructor(datos) {
+    super(datos);
+    this.#moneda = String(datos?.moneda ?? '').toUpperCase();
+    this.#tipoCambio = Number(datos?.tipoCambio);
+  }
+
+  get moneda() { return this.#moneda; }
+  get tipoCambio() { return this.#tipoCambio; }
+  get tipo() { return 'extranjera'; }
+  get tasaImpuesto() { return 0; }
+
+  calcularImpuesto() { return 0; }
+
+  subtotalColones() {
+    return Math.round(this.subtotal() * this.#tipoCambio);
+  }
+
+  total() {
+    return this.subtotalColones() + this.calcularImpuesto();
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      monedaOriginal: this.#moneda,
+      tipoCambio: this.#tipoCambio,
+      subtotalOriginal: this.subtotal(),
+    };
+  }
+}
+
+// Patrón Factory (FabricaFacturas)
+class FabricaFacturas {
+  static #registro = {
+    nacional: FacturaNacional,
+    exenta: FacturaExenta,
+    extranjera: FacturaExtranjera,
+  };
+
+  static tipos() {
+    return Object.keys(FabricaFacturas.#registro);
+  }
+
+  static soporta(tipo) {
+    const clave = String(tipo ?? '').trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(FabricaFacturas.#registro, clave);
+  }
+
+  static registrar(tipo, clase) {
+    FabricaFacturas.#registro[String(tipo).trim().toLowerCase()] = clase;
+    return FabricaFacturas;
+  }
+
+  static crear(datos) {
+    const clave = String(datos?.tipo ?? '').trim().toLowerCase();
+    const Clase = FabricaFacturas.#registro[clave];
+    if (!Clase) {
+      throw new ErrorFactura(
+        `El tipo "${datos?.tipo}" no está soportado. Tipos válidos: ${FabricaFacturas.tipos().join(', ')}.`,
+        'TIPO_NO_SOPORTADO'
+      );
+    }
+    return new Clase(datos);
+  }
+}
+
+// Validador de Negocio (ValidadorFactura)
+class ValidadorFactura {
+  static CEDULA_COSTARRICENSE = /^3-\d{3}-\d{6}$/;
+
+  static validar(datos = {}) {
+    const errores = [];
+    const advertencias = [];
+
+    if (!datos.numero || String(datos.numero).trim() === '') {
+      errores.push('El número de factura es obligatorio.');
+    }
+
+    const cedula = String(datos.cedulaJuridica ?? '').trim();
+    if (cedula === '') {
+      errores.push('La cédula jurídica del proveedor es obligatoria.');
+    } else if (!ValidadorFactura.CEDULA_COSTARRICENSE.test(cedula)) {
+      errores.push(`La cédula jurídica "${cedula}" no cumple el formato 3-XXX-XXXXXX.`);
+    }
+
+    if (!FabricaFacturas.soporta(datos.tipo)) {
+      errores.push(`El tipo "${datos.tipo}" no está soportado. Tipos válidos: ${FabricaFacturas.tipos().join(', ')}.`);
+    }
+
+    const fecha = new Date(datos.fecha);
+    if (!datos.fecha || Number.isNaN(fecha.getTime())) {
+      errores.push('La fecha de la factura es obligatoria y debe ser válida.');
+    } else if (fecha.getTime() > Date.now()) {
+      advertencias.push(`La fecha ${String(datos.fecha).slice(0, 10)} es futura: requiere validación de gerencia.`);
+    }
+
+    const lineas = Array.isArray(datos.lineas) ? datos.lineas : [];
+    if (lineas.length === 0) {
+      errores.push('La factura debe tener al menos una línea de detalle.');
+    }
+    lineas.forEach((linea, indice) => {
+      const numeroLinea = indice + 1;
+      const descripcion = String(linea?.descripcion ?? '').trim();
+      const cantidad = Number(linea?.cantidad);
+      const precio = Number(linea?.precioUnitario);
+
+      if (descripcion === '') {
+        errores.push(`Línea ${numeroLinea}: la descripción es obligatoria.`);
+      }
+      if (!Number.isFinite(cantidad) || cantidad <= 0) {
+        errores.push(`Línea ${numeroLinea}: la cantidad debe ser mayor que 0.`);
+      }
+      if (!Number.isFinite(precio) || precio <= 0) {
+        errores.push(`Línea ${numeroLinea}: el precio unitario debe ser mayor que 0.`);
+      }
+    });
+
+    return {
+      valida: errores.length === 0,
+      errores,
+      advertencias,
+    };
+  }
+}
+
+// Constantes
+const ESTADOS = {
+  APROBADA: 'aprobada',
+  REVISION: 'revision',
+  RECHAZADA: 'rechazada',
+};
+
+const ACCIONES = {
+  [ESTADOS.APROBADA]: 'Registrar en contabilidad',
+  [ESTADOS.REVISION]: 'Enviar a gerencia',
+  [ESTADOS.RECHAZADA]: 'Devolver al proveedor',
+};
+
+// Procesamiento de factura
+function procesarFactura(datos = {}) {
+  const validacion = ValidadorFactura.validar(datos);
+  const errores = [...validacion.errores];
+  const advertencias = [...validacion.advertencias];
+
+  let instancia = null;
+  try {
+    instancia = FabricaFacturas.crear(datos);
+  } catch (error) {
+    const yaReportado = error instanceof ErrorFactura && error.codigo === 'TIPO_NO_SOPORTADO';
+    if (!yaReportado && validacion.errores.length === 0) {
+      errores.push(error.message);
+    }
+  }
+
+  const identidad = {
+    numero: datos.numero ?? null,
+    tipo: String(datos.tipo ?? '').trim().toLowerCase(),
+    proveedor: datos.proveedor ?? null,
+    cedulaJuridica: datos.cedulaJuridica ?? null,
+    fecha: datos.fecha ?? null,
+  };
+
+  const lineas = Array.isArray(datos.lineas)
+    ? datos.lineas.map((linea) => ({
+        descripcion: String(linea?.descripcion ?? ''),
+        cantidad: Number(linea?.cantidad),
+        precioUnitario: Number(linea?.precioUnitario),
+      }))
+    : [];
+
+  if (errores.length > 0) {
+    const montoReferencial = LineaFactura.subtotalDe(datos.lineas);
+    return {
+      ...identidad,
+      estado: ESTADOS.RECHAZADA,
+      nivel: 'error',
+      motivo: errores.join(' | '),
+      errores,
+      advertencias,
+      lineas,
+      subtotal: montoReferencial,
+      impuesto: 0,
+      total: montoReferencial,
+      moneda: 'CRC',
+      referencia: true,
+      accion: ACCIONES[ESTADOS.RECHAZADA],
+    };
+  }
+
+  const calculo = instancia.toJSON();
+  const estadoFinal = advertencias.length > 0 ? ESTADOS.REVISION : ESTADOS.APROBADA;
+
+  return {
+    ...identidad,
+    ...calculo,
+    estado: estadoFinal,
+    nivel: advertencias.length > 0 ? 'aviso' : 'ok',
+    motivo: advertencias.join(' | '),
+    errores,
+    advertencias,
+    referencia: false,
+    accion: ACCIONES[estadoFinal],
+  };
+}
+
+// ReporteLote (Nodo 9)
+class ReporteLote {
+  #facturas = [];
+
+  agregar(f) {
+    if (!f || typeof f !== 'object') {
+      throw new TypeError('ReporteLote.agregar() requiere un registro de factura.');
+    }
+    this.#facturas.push(f);
+    return this;
+  }
+
+  get facturas() { return [...this.#facturas]; }
+  get tamano() { return this.#facturas.length; }
+  get activas() { return this.#facturas.filter((f) => f.estado !== ESTADOS.RECHAZADA); }
+  get rechazadas() { return this.#facturas.filter((f) => f.estado === ESTADOS.RECHAZADA); }
+
+  resumen() {
+    const total = this.#facturas.length;
+    const porEstado = {
+      [ESTADOS.APROBADA]: 0,
+      [ESTADOS.REVISION]: 0,
+      [ESTADOS.RECHAZADA]: 0,
+    };
+    for (const f of this.#facturas) {
+      porEstado[f.estado] = (porEstado[f.estado] ?? 0) + 1;
+    }
+
+    const activas = this.activas;
+    const subtotal = activas.reduce((acumulado, f) => acumulado + (f.subtotal ?? 0), 0);
+    const impuesto = activas.reduce((acumulado, f) => acumulado + (f.impuesto ?? 0), 0);
+    const totalMonto = activas.reduce((acumulado, f) => acumulado + (f.total ?? 0), 0);
+    const montoRechazado = this.rechazadas.reduce((acumulado, f) => acumulado + (f.total ?? 0), 0);
+    const monedas = [...new Set(this.#facturas.map((f) => f.monedaOriginal ?? 'CRC'))];
+
+    return {
+      generadoEn: new Date().toISOString(),
+      totalFacturas: total,
+      porEstado,
+      subtotal,
+      impuesto,
+      total: totalMonto,
+      montoRechazado,
+      tasaImpuestoEfectiva: subtotal > 0 ? Number(((impuesto / subtotal) * 100).toFixed(2)) : 0,
+      monedas,
+      facturas: this.#facturas,
+    };
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. DATOS DE PRUEBA OFICIALES (Lote de 7 facturas)
+ * ------------------------------------------------------------------------ */
+const loteOficial = [
+  { numero: 'F-001', tipo: 'nacional', proveedor: 'Distribuidora Central', cedulaJuridica: '3-101-123456', fecha: '2026-09-10', lineas: [{ descripcion: 'Resmas de papel', cantidad: 10, precioUnitario: 5000 }] },
+  { numero: 'F-002', tipo: 'exenta', proveedor: 'Clínica San José', cedulaJuridica: '3-102-654321', fecha: '2026-09-12', motivoExencion: 'Servicios de salud', lineas: [{ descripcion: 'Exámenes médicos', cantidad: 2, precioUnitario: 75000 }] },
+  { numero: 'F-003', tipo: 'extranjera', proveedor: 'Cloud Services Inc.', cedulaJuridica: '3-012-000111', fecha: '2026-09-15', moneda: 'USD', tipoCambio: 510, lineas: [{ descripcion: 'Licencia anual', cantidad: 1, precioUnitario: 2500 }] },
+  { numero: 'F-004', tipo: 'nacional', proveedor: 'Ferretería El Clavo', cedulaJuridica: '123', fecha: '2026-09-20', lineas: [{ descripcion: 'Tornillos', cantidad: 100, precioUnitario: 50 }] },
+  { numero: 'F-005', tipo: 'nacional', proveedor: 'TecnoMundo', cedulaJuridica: '3-101-777888', fecha: '2026-09-25', lineas: [{ descripcion: 'Laptops', cantidad: 4, precioUnitario: 250000 }] },
+  { numero: 'F-006', tipo: 'credito', proveedor: 'Proveedor X', cedulaJuridica: '3-101-999000', fecha: '2026-09-28', lineas: [{ descripcion: 'Varios', cantidad: 1, precioUnitario: 10000 }] },
+  { numero: 'F-007', tipo: 'nacional', proveedor: 'Imprenta Futura', cedulaJuridica: '3-101-444555', fecha: '2030-01-15', lineas: [{ descripcion: 'Volantes', cantidad: 500, precioUnitario: 20 }] }
+];
+
+/* ---------------------------------------------------------------------------
+ * 3. INTERFAZ Y RENDERIZADO EN CLIENTE
+ * ------------------------------------------------------------------------ */
+const formatoMoneda = (n) => '₡' + Number(n).toLocaleString('es-CR');
+
+function renderTablaLote(facturas) {
+  const tbody = document.getElementById('tablaFacturasBody');
+  const maxTotal = Math.max(...facturas.map(f => f.total || 0), 1);
+
+  tbody.innerHTML = facturas.map((f) => {
+    let colorFila = 'var(--ok)';
+    let pillClase = 'pill--aprobada';
+    let estadoTexto = 'Aprobada';
+
+    if (f.estado === ESTADOS.REVISION) {
+      colorFila = 'var(--warn)';
+      pillClase = 'pill--revision';
+      estadoTexto = 'En revisión';
+    } else if (f.estado === ESTADOS.RECHAZADA) {
+      colorFila = 'var(--err)';
+      pillClase = 'pill--rechazada';
+      estadoTexto = 'Rechazada';
+    }
+
+    let tipoClase = 'tipo-tag';
+    if (f.tipo === 'exenta') tipoClase += ' tipo-tag--exenta';
+    if (f.tipo === 'extranjera') tipoClase += ' tipo-tag--extranjera';
+    if (f.tipo === 'credito') tipoClase += ' tipo-tag--credito';
+
+    const porcentaje = Math.min(100, Math.round((f.total / maxTotal) * 100));
+
+    return `
+      <tr style="--fila:${colorFila}">
+        <td><b>${f.numero}</b>${f.motivo ? `<div style="font-size:11px;color:${colorFila};margin-top:4px">${f.motivo}</div>` : ''}</td>
+        <td><span class="${tipoClase}">${f.tipo}</span>${f.monedaOriginal ? `<div style="font-size:11px;color:var(--suave);margin-top:2px">${f.monedaOriginal} ${f.subtotalOriginal} × ${f.tipoCambio}</div>` : ''}</td>
+        <td><b>${f.proveedor}</b><div style="font-size:11px;color:var(--suave)">${f.cedulaJuridica}</div></td>
+        <td class="num">${f.fecha}</td>
+        <td><span class="pill ${pillClase}">${estadoTexto}</span></td>
+        <td class="num">${formatoMoneda(f.subtotal)}</td>
+        <td class="num" style="color:${f.impuesto > 0 ? 'var(--violeta)' : 'inherit'}">${formatoMoneda(f.impuesto)}</td>
+        <td class="num total-cell">
+          ${formatoMoneda(f.total)}
+          <div class="barra-peso"><span style="width:${porcentaje}%;background:${colorFila}"></span></div>
+          ${f.referencia ? '<span style="font-size:10px;color:var(--suave);font-style:italic">referencial (no suma)</span>' : ''}
+        </td>
+        <td>
+          <span style="font-size:12px;font-weight:600;color:${colorFila};background:var(--fondo);padding:4px 8px;border-radius:6px;border:1px solid var(--borde)">
+            ${f.accion || '—'}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function ejecutarSimulacion() {
+  const procesadas = loteOficial.map(procesarFactura);
+  const rep = new ReporteLote();
+  procesadas.forEach(p => rep.agregar(p));
+  const resumen = rep.resumen();
+
+  document.getElementById('kpi-total').textContent = resumen.totalFacturas;
+  document.getElementById('kpi-aprobadas').textContent = resumen.porEstado.aprobada;
+  document.getElementById('kpi-revision').textContent = resumen.porEstado.revision;
+  document.getElementById('kpi-rechazadas').textContent = resumen.porEstado.rechazada;
+  document.getElementById('kpi-monto-total').textContent = formatoMoneda(resumen.total);
+  document.getElementById('kpi-monto-iva').textContent = formatoMoneda(resumen.impuesto);
+  document.getElementById('kpi-tasa-efectiva').textContent = `Tasa efectiva ${resumen.tasaImpuestoEfectiva}%`;
+
+  renderTablaLote(procesadas);
+
+  // Animación del pipeline
+  const nodos = ['pnode-1', 'pnode-2', 'pnode-3', 'pnode-4', 'pnode-5', 'pnode-8', 'pnode-9'];
+  nodos.forEach((id, idx) => {
+    setTimeout(() => {
+      document.querySelectorAll('.pipeline-node').forEach(n => n.classList.remove('nodo-activo'));
+      const el = document.getElementById(id);
+      if (el) el.classList.add('nodo-activo');
+    }, idx * 150);
+  });
+}
+
+// Control de Pestañas
+document.getElementById('navTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activo'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('activo'));
+  btn.classList.add('activo');
+  const targetId = 'tab-' + btn.dataset.tab;
+  const targetPanel = document.getElementById(targetId);
+  if (targetPanel) targetPanel.classList.add('activo');
+});
+
+// Laboratorio de Facturas
+const presets = {
+  'F-001': { numero: 'F-001', tipo: 'nacional', proveedor: 'Distribuidora Central', cedula: '3-101-123456', fecha: '2026-09-10', desc: 'Resmas de papel', cant: 10, precio: 5000 },
+  'F-002': { numero: 'F-002', tipo: 'exenta', proveedor: 'Clínica San José', cedula: '3-102-654321', fecha: '2026-09-12', motivo: 'Servicios de salud', desc: 'Exámenes médicos', cant: 2, precio: 75000 },
+  'F-003': { numero: 'F-003', tipo: 'extranjera', proveedor: 'Cloud Services Inc.', cedula: '3-012-000111', fecha: '2026-09-15', moneda: 'USD', tc: 510, desc: 'Licencia anual', cant: 1, precio: 2500 },
+  'F-004': { numero: 'F-004', tipo: 'nacional', proveedor: 'Ferretería El Clavo', cedula: '123', fecha: '2026-09-20', desc: 'Tornillos', cant: 100, precio: 50 },
+  'F-006': { numero: 'F-006', tipo: 'credito', proveedor: 'Proveedor X', cedula: '3-101-999000', fecha: '2026-09-28', desc: 'Varios', cant: 1, precio: 10000 },
+  'F-007': { numero: 'F-007', tipo: 'nacional', proveedor: 'Imprenta Futura', cedula: '3-101-444555', fecha: '2030-01-15', desc: 'Volantes', cant: 500, precio: 20 },
+};
+
+function toggleCamposTipo() {
+  const tipo = document.getElementById('labTipo').value;
+  document.getElementById('grupoExenta').style.display = (tipo === 'exenta') ? 'block' : 'none';
+  document.getElementById('grupoExtranjera').style.display = (tipo === 'extranjera') ? 'block' : 'none';
+}
+
+function cargarPreset(clave) {
+  const p = presets[clave];
+  if (!p) return;
+  document.getElementById('labNumero').value = p.numero;
+  document.getElementById('labTipo').value = p.tipo;
+  document.getElementById('labProveedor').value = p.proveedor;
+  document.getElementById('labCedula').value = p.cedula;
+  document.getElementById('labFecha').value = p.fecha;
+  document.getElementById('labDescLinea').value = p.desc;
+  document.getElementById('labCantLinea').value = p.cant;
+  document.getElementById('labPrecioLinea').value = p.precio;
+  if (p.motivo) document.getElementById('labMotivo').value = p.motivo;
+  if (p.tc) document.getElementById('labTipoCambio').value = p.tc;
+  if (p.moneda) document.getElementById('labMoneda').value = p.moneda;
+  toggleCamposTipo();
+  evaluarLab();
+}
+
+function evaluarLab() {
+  const datos = {
+    numero: document.getElementById('labNumero').value,
+    tipo: document.getElementById('labTipo').value,
+    proveedor: document.getElementById('labProveedor').value,
+    cedulaJuridica: document.getElementById('labCedula').value,
+    fecha: document.getElementById('labFecha').value,
+    motivoExencion: document.getElementById('labMotivo').value,
+    moneda: document.getElementById('labMoneda').value,
+    tipoCambio: Number(document.getElementById('labTipoCambio').value),
+    lineas: [{
+      descripcion: document.getElementById('labDescLinea').value,
+      cantidad: Number(document.getElementById('labCantLinea').value),
+      precioUnitario: Number(document.getElementById('labPrecioLinea').value)
+    }]
+  };
+
+  const resultado = procesarFactura(datos);
+  const out = document.getElementById('labResultado');
+
+  let claseInstancia = 'Ninguna (Fallo en Fábrica o Rechazo)';
+  if (resultado.estado !== ESTADOS.RECHAZADA) {
+    if (resultado.tipo === 'nacional') claseInstancia = 'FacturaNacional (extends Factura)';
+    if (resultado.tipo === 'exenta') claseInstancia = 'FacturaExenta (extends Factura)';
+    if (resultado.tipo === 'extranjera') claseInstancia = 'FacturaExtranjera (extends Factura)';
+  }
+
+  out.innerHTML = `
+<span style="color:var(--teal)">// 1. RESOLUCIÓN DE CLASE (PATRÓN FACTORY)</span>
+Clase instanciada:   <b style="color:#fff">${claseInstancia}</b>
+Tipo reconocido:     ${resultado.tipo}
+
+<span style="color:var(--teal)">// 2. AUDITORÍA DE POLIMORFISMO (SIN IF PARA IVA)</span>
+Método IVA:          ${resultado.tipo === 'nacional' ? '13% aplicado polimórficamente' : '0% polimórfico (exenta/exportación)'}
+Subtotal en ₡:       ${formatoMoneda(resultado.subtotal)}
+Impuesto en ₡:       ${formatoMoneda(resultado.impuesto)}
+Total en ₡:          <b style="color:#fff">${formatoMoneda(resultado.total)}</b>
+
+<span style="color:var(--teal)">// 3. VALIDACIÓN DE NEGOCIO (SEVERIDAD)</span>
+Estado resultante:   <b style="color:${resultado.estado === 'aprobada' ? 'var(--ok-txt)' : resultado.estado === 'revision' ? 'var(--warn-txt)' : 'var(--err-txt)'}">${resultado.estado.toUpperCase()}</b>
+Observaciones:       ${resultado.motivo || 'Ninguna (Factura completamente válida)'}
+
+<span style="color:var(--teal)">// 4. MAPEO EN WORKFLOW N8N</span>
+Ruta del Switch:     Salida "${resultado.estado}"
+Acción asignada Set: "${resultado.accion}"
+Estructura n8n:      [{ json: { ... } }]
+`;
+}
+
+document.getElementById('btnEvaluarLab').addEventListener('click', evaluarLab);
+document.getElementById('btnLimpiarLab').addEventListener('click', () => {
+  document.getElementById('labNumero').value = '';
+  document.getElementById('labProveedor').value = '';
+  document.getElementById('labCedula').value = '';
+  document.getElementById('labResultado').textContent = 'Esperando datos...';
+});
+
+/* ---------------------------------------------------------------------------
+ * 4. SUITE DE PRUEBAS UNITARIAS EN NAVEGADOR
+ * ------------------------------------------------------------------------ */
+const pruebasUnitarias = [
+  { nombre: 'Pilar 1: LineaFactura encapsula campos privados #', desc: 'No expone campos internos y subtotal() calcula cantidad × precio.', fn: () => {
+    const l = new LineaFactura({ descripcion: 'Test', cantidad: 5, precioUnitario: 1000 });
+    return l.subtotal() === 5000 && l.descripcion === 'Test' && !('#cantidad' in l);
+  }},
+  { nombre: 'Pilar 1: Factura protege #lineas con Object.freeze', desc: 'El getter lineas devuelve una colección inmutable.', fn: () => {
+    const f = FabricaFacturas.crear({ numero: 'F-1', tipo: 'nacional', proveedor: 'P', cedulaJuridica: '3-101-123456', fecha: '2026-09-10', lineas: [{ descripcion: 'L', cantidad: 1, precioUnitario: 100 }] });
+    return Object.isFrozen(f.lineas);
+  }},
+  { nombre: 'Pilar 2: Subclases heredan de Factura', desc: 'FacturaNacional, FacturaExenta y FacturaExtranjera son instancias de Factura.', fn: () => {
+    const fn = new FacturaNacional({ lineas: [{ descripcion: 'A', cantidad: 1, precioUnitario: 100 }] });
+    const fe = new FacturaExenta({ lineas: [{ descripcion: 'A', cantidad: 1, precioUnitario: 100 }] });
+    const fx = new FacturaExtranjera({ lineas: [{ descripcion: 'A', cantidad: 1, precioUnitario: 100 }], tipoCambio: 500 });
+    return fn instanceof Factura && fe instanceof Factura && fx instanceof Factura;
+  }},
+  { nombre: 'Pilar 3: Polimorfismo en FacturaNacional (IVA 13%)', desc: 'Calcula 13% sin evaluar condiciones if por tipo.', fn: () => {
+    const fn = new FacturaNacional({ lineas: [{ descripcion: 'A', cantidad: 10, precioUnitario: 5000 }] });
+    return fn.calcularImpuesto() === 6500 && fn.total() === 56500;
+  }},
+  { nombre: 'Pilar 3: Polimorfismo en FacturaExenta (IVA 0%)', desc: 'Calcula IVA 0% y conserva el motivo de exención.', fn: () => {
+    const fe = new FacturaExenta({ motivoExencion: 'Salud', lineas: [{ descripcion: 'A', cantidad: 2, precioUnitario: 75000 }] });
+    return fe.calcularImpuesto() === 0 && fe.total() === 150000 && fe.motivoExencion === 'Salud';
+  }},
+  { nombre: 'Pilar 3: Polimorfismo en FacturaExtranjera (Conversión a ₡)', desc: 'total() convierte el importe en moneda extranjera a colones vía tipoCambio.', fn: () => {
+    const fx = new FacturaExtranjera({ moneda: 'USD', tipoCambio: 510, lineas: [{ descripcion: 'Licencia', cantidad: 1, precioUnitario: 2500 }] });
+    return fx.calcularImpuesto() === 0 && fx.total() === 1275000;
+  }},
+  { nombre: 'Pilar 4: Factura base abstracta no instanciable', desc: 'new Factura(...) arroja TypeError directamente en constructor.', fn: () => {
+    try {
+      new Factura({ lineas: [] });
+      return false;
+    } catch (e) {
+      return e instanceof TypeError;
+    }
+  }},
+  { nombre: 'Patrón Factory: FabricaFacturas.crear() lanza ErrorFactura ante tipos inválidos', desc: 'Tipos no registrados arrojan ErrorFactura con código TIPO_NO_SOPORTADO.', fn: () => {
+    try {
+      FabricaFacturas.crear({ tipo: 'credito' });
+      return false;
+    } catch (e) {
+      return e instanceof ErrorFactura && e.codigo === 'TIPO_NO_SOPORTADO';
+    }
+  }},
+  { nombre: 'Validador: Cédula costarricense estricta (/^3-\\d{3}-\\d{6}$/)', desc: 'Rechaza cédula 123 y aprueba 3-101-123456.', fn: () => {
+    const r1 = ValidadorFactura.validar({ numero: '1', cedulaJuridica: '123', tipo: 'nacional', fecha: '2026-09-10', lineas: [{ descripcion: 'A', cantidad: 1, precioUnitario: 10 }] });
+    const r2 = ValidadorFactura.validar({ numero: '1', cedulaJuridica: '3-101-123456', tipo: 'nacional', fecha: '2026-09-10', lineas: [{ descripcion: 'A', cantidad: 1, precioUnitario: 10 }] });
+    return !r1.valida && r2.valida;
+  }},
+  { nombre: 'Validador: Fecha futura genera advertencia (Revisión)', desc: 'Fecha posterior a hoy se clasifica como advertencia para gerencia.', fn: () => {
+    const r = ValidadorFactura.validar({ numero: '1', cedulaJuridica: '3-101-123456', tipo: 'nacional', fecha: '2030-01-15', lineas: [{ descripcion: 'A', cantidad: 1, precioUnitario: 10 }] });
+    return r.valida && r.advertencias.length > 0;
+  }},
+  { nombre: 'ReporteLote: Excluye facturas rechazadas de los montos', desc: 'Subtotal del lote es ₡2,485,000, IVA ₡137,800, Total ₡2,622,800.', fn: () => {
+    const rep = new ReporteLote();
+    loteOficial.map(procesarFactura).forEach(p => rep.agregar(p));
+    const res = rep.resumen();
+    return res.subtotal === 2485000 && res.impuesto === 137800 && res.total === 2622800 && res.montoRechazado === 15000;
+  }},
+  { nombre: 'Workflow n8n: 3 Ramas del Switch reciben ítems', desc: 'Se obtienen 4 aprobadas, 1 en revisión y 2 rechazadas.', fn: () => {
+    const procesadas = loteOficial.map(procesarFactura);
+    const apr = procesadas.filter(p => p.estado === 'aprobada').length;
+    const rev = procesadas.filter(p => p.estado === 'revision').length;
+    const rec = procesadas.filter(p => p.estado === 'rechazada').length;
+    return apr === 4 && rev === 1 && rec === 2;
+  }}
+];
+
+function correrPruebasUI() {
+  const contenedor = document.getElementById('testSuiteList');
+  let superadas = 0;
+
+  contenedor.innerHTML = pruebasUnitarias.map((t, i) => {
+    let ok = false;
+    let err = null;
+    try {
+      ok = Boolean(t.fn());
+    } catch (e) {
+      err = e.message;
+    }
+    if (ok) superadas++;
+
+    return `
+      <div class="test-item">
+        <span class="test-item__icon" style="color:${ok ? 'var(--ok-txt)' : 'var(--err-txt)'}">${ok ? '✔' : '✖'}</span>
+        <div style="flex:1">
+          <div class="test-item__name">${t.nombre}</div>
+          <div class="test-item__desc">${t.desc} ${err ? `<span style="color:var(--err-txt)">[Error: ${err}]</span>` : ''}</div>
+        </div>
+        <span class="pill ${ok ? 'pill--aprobada' : 'pill--rechazada'}">${ok ? 'PASÓ' : 'FALLÓ'}</span>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('testSummaryBadge').textContent = `${superadas}/${pruebasUnitarias.length} Pruebas Superadas`;
+  document.getElementById('testProgressBar').style.width = `${(superadas / pruebasUnitarias.length) * 100}%`;
+}
+
+document.getElementById('btnCorrerPruebasNavegador').addEventListener('click', correrPruebasUI);
+document.getElementById('btnEjecutarCheckPOO').addEventListener('click', () => {
+  document.querySelector('[data-tab="pruebas"]').click();
+  correrPruebasUI();
+});
+
+/* ---------------------------------------------------------------------------
+ * 5. VISOR DE CÓDIGO FUENTE & EXPORTADOR
+ * ------------------------------------------------------------------------ */
+let codigosCache = {
+  nodo2: `/* ============================================================================
+ * FacturaBot · Nodo 2 · "Datos de prueba"
+ * ----------------------------------------------------------------------------
+ * Genera el lote de 7 facturas en la estructura nativa de n8n: [{ json: {...} }].
+ * ========================================================================== */
+
+const lote = [
+  { numero: 'F-001', tipo: 'nacional', proveedor: 'Distribuidora Central', cedulaJuridica: '3-101-123456', fecha: '2026-09-10', lineas: [{ descripcion: 'Resmas de papel', cantidad: 10, precioUnitario: 5000 }] },
+  { numero: 'F-002', tipo: 'exenta', proveedor: 'Clínica San José', cedulaJuridica: '3-102-654321', fecha: '2026-09-12', motivoExencion: 'Servicios de salud', lineas: [{ descripcion: 'Exámenes médicos', cantidad: 2, precioUnitario: 75000 }] },
+  { numero: 'F-003', tipo: 'extranjera', proveedor: 'Cloud Services Inc.', cedulaJuridica: '3-012-000111', fecha: '2026-09-15', moneda: 'USD', tipoCambio: 510, lineas: [{ descripcion: 'Licencia anual', cantidad: 1, precioUnitario: 2500 }] },
+  { numero: 'F-004', tipo: 'nacional', proveedor: 'Ferretería El Clavo', cedulaJuridica: '123', fecha: '2026-09-20', lineas: [{ descripcion: 'Tornillos', cantidad: 100, precioUnitario: 50 }] },
+  { numero: 'F-005', tipo: 'nacional', proveedor: 'TecnoMundo', cedulaJuridica: '3-101-777888', fecha: '2026-09-25', lineas: [{ descripcion: 'Laptops', cantidad: 4, precioUnitario: 250000 }] },
+  { numero: 'F-006', tipo: 'credito', proveedor: 'Proveedor X', cedulaJuridica: '3-101-999000', fecha: '2026-09-28', lineas: [{ descripcion: 'Varios', cantidad: 1, precioUnitario: 10000 }] },
+  { numero: 'F-007', tipo: 'nacional', proveedor: 'Imprenta Futura', cedulaJuridica: '3-101-444555', fecha: '2030-01-15', lineas: [{ descripcion: 'Volantes', cantidad: 500, precioUnitario: 20 }] }
+];
+
+return lote.map(f => ({ json: f }));`,
+
+  nodo3: `/* ============================================================================
+ * FacturaBot · Nodo 3 · "Procesar facturas"
+ * ----------------------------------------------------------------------------
+ * Jerarquía de clases (4 pilares de POO) + patrón Factory + Validador de negocio.
+ * Mode: Run Once for All Items
+ * ========================================================================== */
+
+// Capa de Dominio (LineaFactura, Factura, FacturaNacional, FacturaExenta, FacturaExtranjera)
+// FabricaFacturas con registro dinámico y ValidadorFactura
+// Procesamiento del lote y mapeo nativo:
+const items = $input.all();
+const registros = items.map(item => procesarFactura(item.json));
+return registros.map(json => ({ json }));`,
+
+  nodo9: `/* ============================================================================
+ * FacturaBot · Nodo 9 · "Reporte del lote"
+ * ----------------------------------------------------------------------------
+ * Instancia ReporteLote, consolida las métricas y devuelve un único ítem con el
+ * resumen final + el reporte visual en HTML (descargable como binario).
+ * ========================================================================== */
+
+const items = $input.all();
+const reporte = new ReporteLote();
+for (const item of items) {
+  reporte.agregar(item.json);
+}
+const resumen = reporte.resumen();
+const html = renderReporteHTML(resumen, ACCIONES);
+
+return [{
+  json: { ...resumen, html, archivo: 'reporte-lote.html' },
+  binary: {
+    'reporte-lote.html': {
+      data: codificarBase64(html),
+      mimeType: 'text/html',
+      fileName: 'reporte-lote.html'
+    }
+  }
+}];`,
+
+  wf: `/* ============================================================================
+ * FacturaBot · Configuración de los 9 Nodos en n8n
+ * ----------------------------------------------------------------------------
+ * Nodo 1: Manual Trigger
+ * Nodo 2: Code "Datos de prueba" (Run Once for All Items)
+ * Nodo 3: Code "Procesar facturas" (Run Once for All Items)
+ * Nodo 4: Switch "Clasificar" -> 3 reglas:
+ *         1) {{ $json.estado }} == 'aprobada'  -> Salida 0 (Aprobada)
+ *         2) {{ $json.estado }} == 'revision'  -> Salida 1 (Revisión)
+ *         3) {{ $json.estado }} == 'rechazada' -> Salida 2 (Rechazada)
+ * Nodo 5: Set "Aprobada"   -> includeOtherFields: true | accion = "Registrar en contabilidad"
+ * Nodo 6: Set "Revisión"   -> includeOtherFields: true | accion = "Enviar a gerencia"
+ * Nodo 7: Set "Rechazada"  -> includeOtherFields: true | accion = "Devolver al proveedor"
+ * Nodo 8: Merge "Unificar lote" -> Mode: Append | numberInputs: 3
+ * Nodo 9: Code "Reporte del lote" (Run Once for All Items)
+ * ========================================================================== */`
+};
+
+// Cargar código completo desde el backend si está disponible
+async function cargarCodigosRemotos() {
+  try {
+    const res3 = await fetch('/nodes/03-procesar-facturas.js');
+    if (res3.ok) codigosCache.nodo3 = await res3.text();
+    const res9 = await fetch('/nodes/09-reporte-lote.js');
+    if (res9.ok) codigosCache.nodo9 = await res9.text();
+  } catch(e) {}
+}
+
+let nodoActualVisible = 3;
+function mostrarCodigoNodo(n) {
+  nodoActualVisible = n;
+  const bloque = document.getElementById('codigoBloque');
+  const titulo = document.getElementById('codigoBarraTitulo');
+
+  document.querySelectorAll('#tab-codigo button.sm').forEach(b => b.classList.remove('activo'));
+
+  if (n === 2) {
+    titulo.textContent = 'nodes/02-datos-prueba.js · Run Once for All Items';
+    bloque.textContent = codigosCache.nodo2;
+    document.getElementById('btnVerNodo2').classList.add('activo');
+  } else if (n === 3) {
+    titulo.textContent = 'nodes/03-procesar-facturas.js · POO + Factory + Validador';
+    bloque.textContent = codigosCache.nodo3;
+    document.getElementById('btnVerNodo3').classList.add('activo');
+  } else if (n === 9) {
+    titulo.textContent = 'nodes/09-reporte-lote.js · ReporteLote & Renderizador Base64';
+    bloque.textContent = codigosCache.nodo9;
+    document.getElementById('btnVerNodo9').classList.add('activo');
+  } else {
+    titulo.textContent = 'Arquitectura del Workflow · Switch + Sets + Merge';
+    bloque.textContent = codigosCache.wf;
+    document.getElementById('btnVerWorkflowNodos').classList.add('activo');
+  }
+}
+
+document.getElementById('btnCopiarCodigoNodo').addEventListener('click', () => {
+  const texto = document.getElementById('codigoBloque').textContent;
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.getElementById('btnCopiarCodigoNodo');
+    const original = btn.textContent;
+    btn.textContent = '✔ ¡Copiado!';
+    setTimeout(() => btn.textContent = original, 2000);
+  });
+});
+
+document.getElementById('btnCopiarWorkflow').addEventListener('click', async () => {
+  try {
+    let jsonTexto = '';
+    const resp = await fetch('/workflow.json');
+    if (resp.ok) jsonTexto = await resp.text();
+    else jsonTexto = JSON.stringify({ name: "FacturaBot · POO en n8n" }, null, 2);
+
+    await navigator.clipboard.writeText(jsonTexto);
+    const btn = document.getElementById('btnCopiarWorkflow');
+    btn.textContent = '✔ ¡Workflow Copiado!';
+    setTimeout(() => btn.textContent = '📋 Copiar workflow.json', 2000);
+  } catch(e) {
+    alert('No se pudo copiar el archivo workflow.json');
+  }
+});
+
+document.getElementById('btnDescargarWorkflow').addEventListener('click', async () => {
+  try {
+    const resp = await fetch('/workflow.json');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'workflow.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    window.open('/workflow.json', '_blank');
+  }
+});
+
+/* ---------------------------------------------------------------------------
+ * 6. MODAL DEL REPORTE MIDNIGHT LEDGER
+ * ------------------------------------------------------------------------ */
+document.getElementById('btnVerReporteModal').addEventListener('click', () => {
+  const modal = document.getElementById('modalReporte');
+  const iframe = document.getElementById('iframeReporte');
+  if (location.protocol === 'file:') {
+    iframe.src = 'assets/reporte-lote.html';
+  } else {
+    iframe.src = API + '/reporte';
+  }
+  modal.classList.add('activo');
+});
+
+document.getElementById('btnCerrarModal').addEventListener('click', () => {
+  document.getElementById('modalReporte').classList.remove('activo');
+});
+
+/* ---------------------------------------------------------------------------
+ * 7. CONTROL DE SERVICIOS, PUERTOS & CONSOLA (API)
+ * ------------------------------------------------------------------------ */
+const API = (location.protocol === 'file:') ? 'http://localhost:8090' : location.origin;
+const consola = document.getElementById('consola');
+const serviciosContenedor = document.getElementById('servicios');
+const punto = document.getElementById('punto');
+const estadoApi = document.getElementById('estadoApi');
+const botonLiberar = document.getElementById('btnLiberar');
+const lineas = [];
+let puertosConocidos = [];
+
+function escribir(texto, clase = '') {
+  lineas.push({ texto, clase });
+  if (lineas.length > 250) lineas.shift();
+  consola.innerHTML = lineas
+    .map((l) => l.clase ? `<span class="${l.clase}">${l.texto}</span>` : l.texto)
+    .join('\n');
+  consola.scrollTop = consola.scrollHeight;
+}
+
+async function api(ruta, opciones = {}) {
+  const respuesta = await fetch(API + ruta, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opciones,
+  });
+  if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
+  return respuesta.json();
+}
+
+function tarjetaServicio(s) {
+  const activo = s.activo;
+  const etiqueta = activo ? `Activo · ${s.pids.join(', ') || '—'}` : 'Libre';
+  const botones = [];
+  if (!s.soloDetener) {
+    botones.push(`<button class="primario sm" data-accion="iniciar" data-servicio="${s.clave}" ${activo ? 'disabled' : ''}>Iniciar</button>`);
+  }
+  botones.push(`<button class="peligro sm" data-accion="detener" data-servicio="${s.clave}" ${activo ? '' : 'disabled'}>Detener</button>`);
+  if (s.url) {
+    botones.push(`<a class="enlace-reporte" href="${s.url}" target="_blank" style="font-size:12px;margin-left:auto">Abrir →</a>`);
+  }
+  return `
+    <div class="servicio-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-weight:700;font-size:14.5px">${s.nombre}</div>
+          <div style="font-size:11.5px;color:var(--suave);font-family:'Fira Code',monospace">${s.detalle}</div>
+        </div>
+        <span class="pill ${activo ? 'pill--aprobada' : 'pill--revision'}">${etiqueta}</span>
+      </div>
+      <div style="font-size:12px;color:var(--suave);display:flex;gap:12px;margin:4px 0">
+        <span>Puerto <b>${s.puerto}</b></span>
+        ${s.procesos && s.procesos.length ? `<span>${s.procesos.map(p => p.nombre).join(', ')}</span>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">${botones.join('')}</div>
+    </div>`;
+}
+
+async function refrescarServicios() {
+  try {
+    const datos = await api('/api/estado');
+    punto.classList.add('punto--on');
+    estadoApi.textContent = 'API Conectada';
+    serviciosContenedor.innerHTML = datos.servicios.map(tarjetaServicio).join('');
+    puertosConocidos = [...new Set(datos.servicios.map((s) => s.puerto))];
+    botonLiberar.textContent = `Liberar puertos ${puertosConocidos.join(' · ')}`;
+  } catch (error) {
+    punto.classList.remove('punto--on');
+    estadoApi.textContent = 'API Sin Conexión (Modo Offline)';
+  }
+}
+
+async function accionServicio(servicio, tipo) {
+  try {
+    const datos = await api('/api/servicio', {
+      method: 'POST',
+      body: JSON.stringify({ servicio, accion: tipo }),
+    });
+    escribir(datos.mensaje, datos.ok ? 'ok' : 'err');
+    await refrescarServicios();
+  } catch (error) {
+    escribir(`Error: ${error.message}`, 'err');
+  }
+}
+
+async function liberarPuertos() {
+  if (!puertosConocidos.length) return;
+  if (!confirm(`Se terminarán los procesos que escuchen en ${puertosConocidos.join(', ')}.\n¿Continuar?`)) return;
+  try {
+    const datos = await api('/api/liberar', {
+      method: 'POST',
+      body: JSON.stringify({ puertos: puertosConocidos }),
+    });
+    escribir(datos.mensaje, 'ok');
+    await refrescarServicios();
+  } catch (error) {
+    escribir(`Error: ${error.message}`, 'err');
+  }
+}
+
+serviciosContenedor.addEventListener('click', (evento) => {
+  const boton = evento.target.closest('button[data-accion]');
+  if (!boton) return;
+  accionServicio(boton.dataset.servicio, boton.dataset.accion);
+});
+
+document.getElementById('btnLiberar').addEventListener('click', liberarPuertos);
+document.getElementById('btnTodos').addEventListener('click', async () => {
+  for (const clave of ['web', 'n8n']) await accionServicio(clave, 'iniciar');
+});
+document.getElementById('btnDetenerTodos').addEventListener('click', async () => {
+  for (const clave of ['web', 'n8n', 'personal']) await accionServicio(clave, 'detener');
+});
+
+document.getElementById('btnEjecutarSimulacion').addEventListener('click', ejecutarSimulacion);
+document.getElementById('linkReporte').href = (location.protocol === 'file:') ? 'assets/reporte-lote.html' : API + '/reporte';
+
+// Inicialización de la suite
+window.addEventListener('DOMContentLoaded', () => {
+  ejecutarSimulacion();
+  correrPruebasUI();
+  mostrarCodigoNodo(3);
+  cargarCodigosRemotos();
+  refrescarServicios();
+  setInterval(refrescarServicios, 3000);
+  escribir('FacturaBot Master Suite inicializada con éxito.', 'ok');
+});
+</script>
+</body>
+</html>

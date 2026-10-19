@@ -1,0 +1,16 @@
+{
+  "name": "facturabot-n8n-poo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FacturaBot: Programación Orientada a Objetos en el nodo Code de n8n",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "verificar": "node tools/verificar.mjs",
+    "probar": "node tools/probar-nodos.mjs",
+    "test": "node tools/build.mjs && node tools/verificar.mjs && node tools/probar-nodos.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
